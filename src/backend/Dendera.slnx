@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="Dendera.Api/Dendera.Api.csproj" />
+    <Project Path="Dendera.Core/Dendera.Core.csproj" />
+    <Project Path="Dendera.Sources/Dendera.Sources.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Dendera.Core.Tests/Dendera.Core.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,25 @@
+# .NET
+bin/
+obj/
+*.user
+.vs/
+
+# SQLite data (personal: birth data and journal)
+*.db
+*.db-shm
+*.db-wal
+
+# Frontend
+node_modules/
+dist/
+.angular/
+
+# Built frontend copied into the API for single-process hosting
+src/backend/Dendera.Api/wwwroot/
+
+# IDE / OS
+.idea/
+.vscode/*
+!.vscode/extensions.json
+Thumbs.db
+.DS_Store

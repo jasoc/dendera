@@ -1,0 +1,190 @@
+{
+  // Dendera rule set. Rules are hypotheses: the journal + correlation engine tests them.
+  // Zones must be ids from Dendera.Core/Rules/BodyZones.cs (validated at load).
+  "id": "melothesia-classic",
+  "version": "1.0.0",
+  "name": "Melotesia classica",
+  "description": "Ptolemaic / medieval medical astrology: sign → body part (Zodiac Man), planet → organ system, plus physical signals (light, geomagnetism, weather) read as influences on the same body.",
+
+  "correspondences": {
+    // Melothesia: signs from head (Aries) to feet (Pisces)
+    "aries": ["head"],
+    "taurus": ["throat"],
+    "gemini": ["shoulders", "lungs", "nervous-system"],
+    "cancer": ["stomach", "mood"],
+    "leo": ["heart", "vitality"],
+    "virgo": ["gut", "solar-plexus"],
+    "libra": ["kidneys"],
+    "scorpio": ["pelvis"],
+    "sagittarius": ["thighs", "liver"],
+    "capricorn": ["knees", "skeleton"],
+    "aquarius": ["calves", "circulation"],
+    "pisces": ["feet", "lymph"],
+
+    // Planet → organ / system (traditional, plus modern outer planets)
+    "sun": ["heart", "vitality"],
+    "moon": ["stomach", "sleep", "mood", "lymph"],
+    "mercury": ["nervous-system", "lungs", "shoulders"],
+    "venus": ["kidneys", "throat"],
+    "mars": ["solar-plexus", "circulation", "head"],
+    "jupiter": ["liver", "thighs"],
+    "saturn": ["skeleton", "knees"],
+    "uranus": ["nervous-system", "calves"],
+    "neptune": ["lymph", "sleep", "feet"],
+    "pluto": ["pelvis", "gut"],
+    "asc": ["vitality", "head"],
+    "mc": [],
+    "north-node": []
+  },
+
+  "aspects": [
+    { "id": "conjunction",    "angle": 0,   "orb": 8, "quality": "fusion",  "major": true },
+    { "id": "opposition",     "angle": 180, "orb": 8, "quality": "tension", "major": true },
+    { "id": "square",         "angle": 90,  "orb": 7, "quality": "tension", "major": true },
+    { "id": "trine",          "angle": 120, "orb": 7, "quality": "flow",    "major": true },
+    { "id": "sextile",        "angle": 60,  "orb": 5, "quality": "flow",    "major": true },
+    { "id": "quincunx",       "angle": 150, "orb": 3, "quality": "tension", "major": false },
+    { "id": "semisquare",     "angle": 45,  "orb": 2, "quality": "tension", "major": false },
+    { "id": "sesquiquadrate", "angle": 135, "orb": 2, "quality": "tension", "major": false }
+  ],
+
+  "orbs": { "transit": 0.4, "sky": 0.5 },
+  "natalAmplification": 0.5,
+  "saturation": 2.5,
+
+  "rules": [
+    {
+      "id": "transit-to-natal",
+      "when": { "kind": "transit-aspect" },
+      "effect": {
+        "zonesFrom": ["transitBody", "natalPoint", "natalSign"],
+        "weight": 1.0,
+        "tagWeights": {
+          "transitBody": { "pluto": 1.0, "neptune": 1.0, "uranus": 1.0, "saturn": 1.0, "jupiter": 0.8,
+                           "mars": 0.7, "sun": 0.6, "venus": 0.5, "mercury": 0.5, "moon": 0.4, "*": 0.5 }
+        }
+      },
+      "text": "{transitBody} in {aspect} con {natalPoint} natale ({natalSign})"
+    },
+    {
+      "id": "retrograde",
+      "when": { "kind": "retrograde" },
+      "effect": {
+        "zonesFrom": ["body"],
+        "weight": 0.5,
+        "quality": "inward",
+        "tagWeights": {
+          "body": { "mercury": 1.0, "venus": 0.9, "mars": 0.9, "jupiter": 0.5, "saturn": 0.6,
+                    "uranus": 0.4, "neptune": 0.4, "pluto": 0.4 }
+        }
+      },
+      "text": "{body} retrogrado in {sign}: il flusso si ritira verso l'interno"
+    },
+    {
+      "id": "station",
+      "when": { "kind": "station", "minIntensity": 0.2 },
+      "effect": { "zonesFrom": ["body", "sign"], "weight": 0.8, "quality": "pressure" },
+      "text": "{body} stazionario in {sign}: il punto di svolta concentra la forza"
+    },
+    {
+      "id": "many-retrogrades",
+      "when": { "kind": "retrograde-count", "minIntensity": 0.3 },
+      "effect": { "zones": ["mood", "nervous-system", "vitality"], "weight": 0.6, "quality": "inward" },
+      "text": "{count} pianeti retrogradi insieme: il cielo spinge verso l'interno"
+    },
+    {
+      "id": "sky-aspect",
+      "when": { "kind": "sky-aspect" },
+      "effect": {
+        "zonesFrom": ["bodyA", "bodyB"],
+        "weight": 0.35,
+        "tagWeights": { "bodyA": { "moon": 0.4, "*": 1.0 } }
+      },
+      "text": "{bodyA} in {aspect} con {bodyB} nel cielo"
+    },
+    {
+      "id": "moon-sign",
+      "when": { "kind": "placement", "tags": { "body": ["moon"] } },
+      "effect": { "zonesFrom": ["sign"], "weight": 0.35, "quality": "sensitivity" },
+      "text": "Luna in {sign}: zona sensibile (regola medievale: non operare la parte governata dal segno lunare)"
+    },
+    {
+      "id": "sun-sign",
+      "when": { "kind": "placement", "tags": { "body": ["sun"] } },
+      "effect": { "zonesFrom": ["sign"], "weight": 0.25, "quality": "fusion" },
+      "text": "Sole in {sign}: la stagione illumina questa zona"
+    },
+    {
+      "id": "full-moon",
+      "when": { "kind": "lunar-phase", "tags": { "phase": ["full"] } },
+      "effect": { "zones": ["sleep", "mood", "lymph"], "weight": 0.7, "quality": "agitation" },
+      "text": "Luna piena: maree alte nei fluidi e nel sonno"
+    },
+    {
+      "id": "new-moon",
+      "when": { "kind": "lunar-phase", "tags": { "phase": ["new"] } },
+      "effect": { "zones": ["vitality", "mood"], "weight": 0.5, "quality": "depletion" },
+      "text": "Luna nuova: riserve basse, fase di semina"
+    },
+    {
+      "id": "perigee",
+      "when": { "kind": "lunar-distance", "minIntensity": 0.7 },
+      "effect": { "zones": ["lymph", "sleep"], "weight": 0.3, "quality": "agitation" },
+      "text": "Luna vicina alla Terra: marea più forte"
+    },
+    {
+      "id": "light-deficit",
+      "when": { "kind": "photoperiod", "minIntensity": 0.05 },
+      "effect": { "zones": ["sleep", "mood", "vitality"], "weight": 0.9, "quality": "depletion" },
+      "text": "Poca luce ({detail}): il Sole scende e il ritmo circadiano rallenta"
+    },
+    {
+      "id": "light-change",
+      "when": { "kind": "photoperiod-change", "minIntensity": 0.3 },
+      "effect": { "zones": ["sleep"], "weight": 0.4, "quality": "pressure" },
+      "text": "La luce cambia in fretta ({detail})"
+    },
+    {
+      "id": "eclipse-season",
+      "when": { "kind": "eclipse" },
+      "effect": { "zones": ["vitality", "mood", "nervous-system"], "weight": 0.8, "quality": "tension" },
+      "text": "Stagione di eclissi ({label}): i luminari si oscurano"
+    },
+    {
+      "id": "geomagnetic",
+      "when": { "kind": "geomagnetic", "minIntensity": 0.1 },
+      "effect": { "zones": ["nervous-system", "sleep", "heart", "head"], "weight": 1.0, "quality": "agitation" },
+      "text": "Attività geomagnetica ({detail}): il campo terrestre vibra"
+    },
+    {
+      "id": "pressure-drop",
+      "when": { "kind": "pressure-change", "tags": { "direction": ["drop"] }, "minIntensity": 0.15 },
+      "effect": { "zones": ["head", "knees", "skeleton"], "weight": 0.8, "quality": "pressure" },
+      "text": "Pressione in calo ({detail})"
+    },
+    {
+      "id": "pressure-rise",
+      "when": { "kind": "pressure-change", "tags": { "direction": ["rise"] }, "minIntensity": 0.15 },
+      "effect": { "zones": ["head"], "weight": 0.3, "quality": "pressure" },
+      "text": "Pressione in salita ({detail})"
+    },
+    {
+      "id": "low-pressure",
+      "when": { "kind": "pressure", "minIntensity": 0.2 },
+      "effect": { "zones": ["head", "vitality"], "weight": 0.4, "quality": "depletion" },
+      "text": "Bassa pressione ({detail})"
+    },
+    {
+      "id": "temperature-swing",
+      "when": { "kind": "temperature-swing", "minIntensity": 0.2 },
+      "effect": { "zones": ["circulation", "vitality"], "weight": 0.4, "quality": "tension" },
+      "text": "Sbalzo termico ({detail})"
+    },
+    {
+      "id": "humidity",
+      "when": { "kind": "humidity", "minIntensity": 0.3 },
+      "effect": { "zones": ["skeleton", "lymph"], "weight": 0.3, "quality": "pressure" },
+      "text": "Umidità alta ({detail})"
+    }
+  ]
+}
