@@ -1,0 +1,16 @@
+# Build context is the repo root, but the Dockerfile only COPYs src/ and global.json. Keep
+# everything else out — notably any local SQLite database (birth data, journal) and .env.
+*
+!global.json
+!src/
+
+# Local build outputs, dependencies and data, rebuilt (or mounted) inside the image.
+**/node_modules
+**/bin
+**/obj
+**/*.db
+**/*.db-shm
+**/*.db-wal
+src/frontend/dist
+src/frontend/.angular
+src/backend/Dendera.Api/wwwroot

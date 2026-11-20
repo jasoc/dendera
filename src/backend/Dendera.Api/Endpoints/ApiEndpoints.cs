@@ -1,3 +1,4 @@
+using System.Reflection;
 using Dendera.Api.Data;
 using Dendera.Api.Services;
 using Dendera.Core;
@@ -18,7 +19,11 @@ public static class ApiEndpoints
     {
         var api = app.MapGroup("/api");
 
-        api.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+        // The image's version (InformationalVersion, set by the Dockerfile's DENDERA_VERSION
+        // build arg), so a running container always says what it is.
+        var version = typeof(ApiEndpoints).Assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+        api.MapGet("/health", () => Results.Ok(new { status = "ok", version }));
 
         // ---------- reference data ----------
         api.MapGet("/geocode", async (string q, OpenMeteoGeocoder geo, CancellationToken ct) =>

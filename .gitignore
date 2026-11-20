@@ -23,3 +23,9 @@ src/backend/Dendera.Api/wwwroot/
 !.vscode/extensions.json
 Thumbs.db
 .DS_Store
+
+# Script-managed dev process state (process-compose socket and log)
+.run/
+
+# Local dev environment
+.env

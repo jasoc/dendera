@@ -66,6 +66,8 @@ Rules of engagement:
 dendera/
   CLAUDE.md                 this file
   docs/                     vision, signals & rules guide
+  scripts/                  dev env (run.sh + process-compose.yaml, dev-server, dev-spa, prod-test)
+  Dockerfile, docker-compose.yml   single production container (API + built SPA)
   src/
     backend/                .NET 10 — solution Dendera.slnx, nuget.config, dotnet-tools.json (dotnet-ef)
       Dendera.Core/         PURE. No I/O, no ASP.NET, no EF. Deterministic, unit-tested.
@@ -80,7 +82,7 @@ dendera/
                             also serves the built frontend from wwwroot/
       rules/                rule sets as versioned JSON ("theories"), copied to the API output
       tests/Dendera.Core.Tests/
-    frontend/               Angular 22 (standalone, zoneless, signals), Node 24 (.node-version)
+    frontend/               Angular 22 (standalone, zoneless, signals), Node pinned in .node-version
       src/app/core/         models.ts (API contracts), api.ts, profile-store.ts, symbols.ts
       src/app/components/   sky-wheel.ts, body-map.ts (SVG)
       src/app/pages/        now, timeline, journal, insights (correlations), profile
@@ -151,19 +153,20 @@ quality…), stable `Label`, instant `Detail`.
 
 ## Running
 
+Dev runs on Linux / WSL (the Windows build of process-compose has no detached mode).
+Toolchain pins: `global.json` (.NET SDK), `src/frontend/.node-version` (Node, exact).
+
 ```bash
-# backend (from src/backend) — API on http://localhost:5180, SQLite file Dendera.Api/dendera.db
-dotnet run --project Dendera.Api
-
-# tests (from src/backend)
-dotnet test
-
-# frontend dev (from src/frontend, Node 24) — http://localhost:4200, proxies /api to :5180
-npm install && npm start
-
-# single-process self-hosting: build the frontend into Dendera.Api/wwwroot, then run the API
-npm run build
+./scripts/run.sh             # API (:5180, dotnet watch) + Angular dev server (:4200) under process-compose
+./scripts/run.sh --stop      # stop the stack; ./scripts/dev-server.sh / dev-spa.sh run one side alone
+cd src/backend && dotnet test
+./scripts/prod-test.sh       # build the production image and run it (docker-compose.yml, :8080)
 ```
+
+Production = **one container** (root `Dockerfile`, same pattern as the sibling `lodge`
+project): Node stage builds the SPA into `Dendera.Api/wwwroot`, SDK stage publishes the API,
+aspnet runtime serves both; SQLite at `/data/dendera.db` (volume). Base images are pinned by
+digest. `DENDERA_VERSION` build arg → InformationalVersion → `/api/health`.
 
 ## Roadmap after MVP
 

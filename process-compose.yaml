@@ -1,0 +1,31 @@
+# Native dev stack, driven by ./scripts/run.sh (https://github.com/F1bonacc1/process-compose).
+# The API and the Angular dev server both run natively — SQLite needs no database container.
+# Each process gets its own scrollable log in the TUI.
+version: "0.5"
+
+log_location: .run/process-compose.log
+
+processes:
+  api:
+    command: ./scripts/dev-server.sh
+    shutdown:
+      # `dotnet watch` handles Ctrl+C (SIGINT) and passes it on to the API it runs;
+      # SIGTERM can leave it hanging in "Terminating".
+      signal: 2
+      timeout_seconds: 15
+    readiness_probe:
+      http_get:
+        host: localhost
+        port: 5180
+        path: /api/health
+      initial_delay_seconds: 5
+      period_seconds: 2
+      timeout_seconds: 2
+      # The first `dotnet run` restores and builds — give it a few minutes.
+      failure_threshold: 150
+
+  spa:
+    command: ./scripts/dev-spa.sh
+    depends_on:
+      api:
+        condition: process_started

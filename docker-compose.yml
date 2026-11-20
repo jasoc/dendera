@@ -1,0 +1,28 @@
+# Production stack: one container (Dendera.Api serving the API and the built frontend), its
+# SQLite database in the `dendera-data` volume. Native dev doesn't use this file — see
+# ./scripts/run.sh. `./scripts/prod-test.sh` builds this checkout and runs it.
+#
+#   docker compose up -d            # run the published image
+#   docker compose up --build       # build from this checkout instead
+#
+# Fixed project name so the volume is the same one no matter what the checkout folder is called.
+name: dendera
+
+services:
+  dendera:
+    image: ${DENDERA_IMAGE:-ghcr.io/jasoc/dendera:latest}
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${DENDERA_PORT:-8080}:8080"
+    volumes:
+      - dendera-data:/data
+    healthcheck:
+      # The aspnet image ships no curl/wget; bash's /dev/tcp is enough for a liveness probe.
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /api/health HTTP/1.0\r\n\r\n' >&3 && grep -q '200 OK' <&3"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  dendera-data:

@@ -1,0 +1,2 @@
+# The dev scripts run under bash (Linux / WSL): keep LF even with core.autocrlf=true on Windows.
+*.sh text eol=lf
