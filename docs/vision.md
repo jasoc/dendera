@@ -15,8 +15,9 @@ and — crucially — whether it actually matches how that person feels, day aft
 ## What it is not
 
 - Not a horoscope. No advice of the kind "avoid X today".
-- Not a static personality chart (that is what Human Design and most natal-chart sites
-  do). Dendera is about *the moment* and *the trend*.
+- Not a static personality chart (that is what most natal-chart sites do). Dendera is
+  about *the moment* and *the trend*: even the Human Design school reads the current
+  transits through the gates and centers, not only the birth design.
 - Not a black box. Every activation on the body map can be traced back to the signals and
   the rules that produced it.
 
@@ -31,9 +32,9 @@ Dendera follows the same method:
 
 1. **Signals** — every influence becomes a uniform signal (sky, Moon, light, geomagnetism,
    weather).
-2. **Rules** — a rule set (a "school") maps signals to body zones and qualities using the
-   traditional correspondences (melothesia, planet–organ). Rules are explicit, versioned
-   JSON files.
+2. **Schools** — each school (medical astrology, biometeorology, Chinese medicine, Human
+   Design…) maps signals to body zones and qualities with its own correspondences. Schools
+   are explicit, versioned JSON files and can be switched on and off at any time.
 3. **Journal** — the person records energy, mood, sleep, focus, stress, gut, head and body
    on a 1–5 scale, in ten seconds a day.
 4. **Correspondences** — the correlation engine tests every signal and every body zone

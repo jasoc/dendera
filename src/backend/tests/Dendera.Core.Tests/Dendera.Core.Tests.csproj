@@ -15,11 +15,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="Fixtures\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Dendera.Core\Dendera.Core.csproj" />
+    <ProjectReference Include="..\..\Dendera.Sources\Dendera.Sources.csproj" />
   </ItemGroup>
 
 </Project>

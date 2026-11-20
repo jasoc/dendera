@@ -24,13 +24,17 @@ services.AddSingleton(TimeProvider.System);
 
 // Core (pure)
 services.AddSingleton<IEphemeris, AstronomyEngineEphemeris>();
-services.AddSingleton<SkySignalGenerator>();
-services.AddSingleton(_ => new RuleSetCatalog(
-    Path.Combine(AppContext.BaseDirectory, builder.Configuration["Dendera:RulesDirectory"] ?? "rules")));
+services.AddSingleton(sp => new RuleSetCatalog(
+    Path.Combine(AppContext.BaseDirectory, builder.Configuration["Dendera:RulesDirectory"] ?? "rules"),
+    sp.GetServices<ISignalProvider>().Select(p => p.Info)));
+services.AddSingleton<InfluenceStatusBoard>();
 services.AddSingleton<ProfileContextFactory>();
 services.AddScoped<SignalHub>();
 
-// Impure signal sources: register every ISignalProvider here.
+// Influences: register every ISignalProvider here (pure ones from the Core, impure ones from Dendera.Sources).
+services.AddSingleton<ISignalProvider, EphemerisProvider>();
+services.AddSingleton<ISignalProvider, TcmCalendarProvider>();
+services.AddSingleton<ISignalProvider, HumanDesignProvider>();
 const string userAgent = "Dendera/0.1 (self-hosted)";
 services.AddHttpClient<GfzKpProvider>(c =>
 {
@@ -53,8 +57,15 @@ services.AddHttpClient<OpenMeteoGeocoder>(c =>
     c.BaseAddress = new Uri(OpenMeteoGeocoder.BaseUrl);
     c.Timeout = TimeSpan.FromSeconds(15);
 });
+services.AddHttpClient<SchumannProvider>(c =>
+{
+    c.BaseAddress = new Uri(SchumannProvider.BaseUrl);
+    c.Timeout = TimeSpan.FromSeconds(15);
+    c.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
+});
 services.AddTransient<ISignalProvider>(sp => sp.GetRequiredService<GfzKpProvider>());
 services.AddTransient<ISignalProvider, OpenMeteoWeatherProvider>();
+services.AddTransient<ISignalProvider>(sp => sp.GetRequiredService<SchumannProvider>());
 
 services.AddCors(o => o.AddDefaultPolicy(p =>
     p.WithOrigins("http://localhost:4200").AllowAnyHeader().AllowAnyMethod()));

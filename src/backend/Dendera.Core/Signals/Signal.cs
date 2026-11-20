@@ -1,3 +1,5 @@
+using Dendera.Core.Astro;
+
 namespace Dendera.Core.Signals;
 
 /// <summary>
@@ -47,20 +49,105 @@ public static class SignalKinds
     public const string PressureChange = "pressure-change";
     public const string TemperatureSwing = "temperature-swing";
     public const string Humidity = "humidity";
+    public const string Muggy = "muggy";
+    public const string DayPhase = "day-phase";
+    public const string Dryness = "dryness";
+    public const string Wind = "wind";
+    public const string Temperature = "temperature";
+    public const string Schumann = "schumann";
+    public const string SolarTerm = "solar-term";
+    public const string OrganClock = "organ-clock";
+    public const string HdGate = "hd-gate";
+
+    /// <summary>
+    /// Internal, second pass only: a body node's score in the school's own first pass, so a school can write its
+    /// relations between nodes ("liver → anger"). Never produced by an influence.
+    /// </summary>
+    public const string Node = "node";
 }
 
-/// <summary>Where and when external sources should be queried.</summary>
-public sealed record SignalQuery(DateTimeOffset From, DateTimeOffset To, double Latitude, double Longitude);
+/// <summary>
+/// Where and when influences should be sampled, plus the per-profile context computed influences need.
+/// Frames are <see cref="From"/>, From+Step, … up to <see cref="To"/> (a single frame when Step is zero).
+/// </summary>
+public sealed record SignalQuery(
+    DateTimeOffset From,
+    DateTimeOffset To,
+    double Latitude,
+    double Longitude,
+    NatalChart? Natal = null,
+    TimeSpan Step = default)
+{
+    public IEnumerable<DateTimeOffset> Frames()
+    {
+        if (Step <= TimeSpan.Zero || To <= From)
+        {
+            yield return From;
+            yield break;
+        }
+        for (var t = From; t <= To; t += Step) yield return t;
+    }
+}
+
+/// <summary>One signal kind an influence emits, with a one-line Italian description.</summary>
+public sealed record InfluenceKind(string Kind, string Description);
 
 /// <summary>
-/// An impure signal source (HTTP, sensors...). Implementations live outside the Core.
-/// Adding a new influence to Dendera = writing one of these.
+/// What an influence (signal source) is, for the catalog: facts, no interpretation.
+/// </summary>
+/// <param name="Id">Stable id, equal to <see cref="Signal.Source"/>: "ephemeris", "gfz"…</param>
+/// <param name="Name">Italian display name.</param>
+/// <param name="Description">Italian, one or two plain sentences: what it measures.</param>
+/// <param name="Icon">Icon id in the frontend registry.</param>
+/// <param name="ProviderKind"><see cref="ProviderKinds"/>: library, api or computed.</param>
+/// <param name="ProviderName">"Astronomy Engine", "GFZ Potsdam Kp API"…</param>
+/// <param name="Url">Where the data / library comes from.</param>
+/// <param name="License">Data or code license.</param>
+/// <param name="Reliability"><see cref="Reliabilities"/>: primary (measured / computed by the source) or derived (third-party processing).</param>
+/// <param name="Kinds">Signal kinds it emits.</param>
+public sealed record InfluenceInfo(
+    string Id,
+    string Name,
+    string Description,
+    string Icon,
+    string ProviderKind,
+    string ProviderName,
+    string Url,
+    string License,
+    string Reliability,
+    IReadOnlyList<InfluenceKind> Kinds)
+{
+    public bool Emits(string kind) => Kinds.Any(k => k.Kind == kind);
+}
+
+public static class ProviderKinds
+{
+    public const string Library = "library";
+    public const string Api = "api";
+    public const string Computed = "computed";
+}
+
+public static class Reliabilities
+{
+    public const string Primary = "primary";
+    public const string Derived = "derived";
+}
+
+/// <summary>
+/// An influence: a source of signals (ephemeris, HTTP API, arithmetic on the calendar…).
+/// Pure ones live in the Core, impure ones in Dendera.Sources.
+/// Adding a new influence to Dendera = writing one of these and registering it.
 /// </summary>
 public interface ISignalProvider
 {
-    string Source { get; }
+    InfluenceInfo Info { get; }
 
-    /// <summary>How long a sample stays valid when asking "what is active at instant t".</summary>
+    string Source => Info.Id;
+
+    /// <summary>
+    /// How long a sample stays valid when asking "what is active at instant t".
+    /// Zero = frame-aligned: the provider samples exactly on the query frames.
+    /// </summary>
     TimeSpan SampleValidity { get; }
 
     Task<IReadOnlyList<Signal>> GetAsync(SignalQuery query, CancellationToken cancellationToken);
@@ -75,4 +162,26 @@ public static class SignalSet
             .GroupBy(s => s.Key)
             .Select(g => g.MaxBy(s => s.At)!)
             .ToList();
+
+    /// <summary>
+    /// Active signals at an instant across several influences: for each source, the latest valid sample per key
+    /// (frame-aligned sources, validity zero, contribute only the samples sitting exactly on the instant).
+    /// </summary>
+    public static Func<DateTimeOffset, IReadOnlyList<Signal>> ActiveAt(
+        IEnumerable<Signal> samples, IReadOnlyDictionary<string, TimeSpan> validityBySource, TimeSpan? fallback = null)
+    {
+        var bySource = samples.GroupBy(s => s.Source).Select(g =>
+        {
+            var validity = validityBySource.TryGetValue(g.Key, out var v) ? v : fallback ?? TimeSpan.FromHours(3);
+            if (validity <= TimeSpan.Zero)
+            {
+                var byTime = g.ToLookup(s => s.At);
+                return (Func<DateTimeOffset, IEnumerable<Signal>>)(at => byTime[at]);
+            }
+            var list = g.ToList();
+            return at => LatestAt(list, at, validity);
+        }).ToList();
+
+        return at => bySource.SelectMany(f => f(at)).ToList();
+    }
 }

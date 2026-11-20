@@ -3,7 +3,16 @@ import { DecimalPipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { Api } from '../core/api';
 import { ProfileStore } from '../core/profile-store';
-import { NatalChart, Place, Profile, ProfileInput, RuleSetInfo } from '../core/models';
+import { NatalChart, Place, Profile, ProfileInput } from '../core/models';
+import { CatalogStore } from '../core/catalog-store';
+import { Icon } from '../components/icon';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { BODY_GLYPH } from '../core/symbols';
 
 interface Form {
@@ -17,97 +26,113 @@ interface Form {
   currentPlace: Place | null;
   sameAsBirth: boolean;
   houseSystem: string;
-  ruleSetId: string;
+  schools: string[];
 }
 
 /** Profile: birth data (date, time, place) and where the person lives now. */
 @Component({
   selector: 'app-profile',
-  imports: [DecimalPipe],
+  imports: [
+    DecimalPipe, Icon, MatAutocompleteModule, MatButtonModule, MatCheckboxModule, MatFormFieldModule, MatInputModule,
+    MatSelectModule, MatTooltipModule,
+  ],
+  styles: `
+    mat-form-field { margin-bottom: 4px; }
+    mat-checkbox.block { display: block; margin: -4px 0 10px; }
+    .school-check { margin: 0 0 2px; }
+    .school-line { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .school-line app-icon { color: var(--gold); }
+    .prefix { color: var(--muted); margin: 0 6px 0 12px; }
+  `,
   template: `
     <div class="profile-grid">
       <section class="panel">
         <h2>{{ form().id ? 'Modifica profilo' : 'Nuovo profilo' }}</h2>
 
-        <label class="field"><span>Nome</span>
-          <input [value]="form().name" (input)="patch({ name: $any($event.target).value })" />
-        </label>
+        <mat-form-field appearance="outline">
+          <mat-label>Nome</mat-label>
+          <input matInput [value]="form().name" (input)="patch({ name: $any($event.target).value })" />
+        </mat-form-field>
 
         <div class="row2">
-          <label class="field"><span>Data di nascita</span>
-            <input type="date" [value]="form().birthDate" (change)="patchTime({ birthDate: $any($event.target).value })" />
-          </label>
-          <label class="field"><span>Ora di nascita (locale)</span>
-            <input type="time" [value]="form().birthTime" [disabled]="!form().birthTimeKnown"
+          <mat-form-field appearance="outline">
+            <mat-label>Data di nascita</mat-label>
+            <input matInput type="date" [value]="form().birthDate" (change)="patchTime({ birthDate: $any($event.target).value })" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Ora di nascita (locale)</mat-label>
+            <input matInput type="time" [value]="form().birthTime" [disabled]="!form().birthTimeKnown"
                    (change)="patchTime({ birthTime: $any($event.target).value })" />
-          </label>
+          </mat-form-field>
         </div>
-        <label class="check">
-          <input type="checkbox" [checked]="!form().birthTimeKnown"
-                 (change)="patchTime({ birthTimeKnown: !form().birthTimeKnown, birthTime: form().birthTimeKnown ? '12:00' : form().birthTime })" />
+        <mat-checkbox class="block" [checked]="!form().birthTimeKnown"
+                      (change)="patchTime({ birthTimeKnown: !form().birthTimeKnown, birthTime: form().birthTimeKnown ? '12:00' : form().birthTime })">
           non conosco l'ora (uso mezzogiorno: Ascendente e case non affidabili)
-        </label>
+        </mat-checkbox>
 
-        <div class="field"><span>Luogo di nascita</span>
-          <div class="place">
-            <input [value]="birthQuery()" (input)="search('birth', $any($event.target).value)" placeholder="Cerca città…" />
-            @if (results().kind === 'birth' && results().places.length) {
-              <ul class="suggest">
-                @for (p of results().places; track $index) {
-                  <li (click)="pickPlace('birth', p)">{{ placeLabel(p) }}</li>
-                }
-              </ul>
+        <mat-form-field appearance="outline">
+          <mat-label>Luogo di nascita</mat-label>
+          <app-icon matPrefix name="place" [size]="20" class="prefix" />
+          <input matInput [value]="birthQuery()" (input)="search('birth', $any($event.target).value)"
+                 placeholder="Cerca città…" [matAutocomplete]="birthAuto" />
+          <mat-autocomplete #birthAuto="matAutocomplete" (optionSelected)="pickPlace('birth', $event.option.value)">
+            @if (results().kind === 'birth') {
+              @for (p of results().places; track $index) { <mat-option [value]="p">{{ placeLabel(p) }}</mat-option> }
             }
-          </div>
+          </mat-autocomplete>
           @if (form().birthPlace; as bp) {
-            <small class="muted">{{ bp.latitude | number: '1.4-4' }}, {{ bp.longitude | number: '1.4-4' }} · {{ bp.timeZone }}</small>
+            <mat-hint>{{ bp.latitude | number: '1.4-4' }}, {{ bp.longitude | number: '1.4-4' }} · {{ bp.timeZone }}</mat-hint>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Fuso orario alla nascita (UTC {{ offsetLabel() }})</mat-label>
+          <input matInput type="number" step="15" [value]="form().offsetMinutes"
+                 (change)="patch({ offsetMinutes: +$any($event.target).value })" />
+          <mat-hint>Minuti rispetto a UTC, ora legale compresa. Proposto in automatico: controllalo per le nascite prima degli anni '80.</mat-hint>
+        </mat-form-field>
+
+        <mat-checkbox class="block" [checked]="form().sameAsBirth" (change)="patch({ sameAsBirth: !form().sameAsBirth })">
+          vivo nel luogo di nascita
+        </mat-checkbox>
+
+        @if (!form().sameAsBirth) {
+          <mat-form-field appearance="outline">
+            <mat-label>Dove vivi ora (luce del giorno, meteo)</mat-label>
+            <app-icon matPrefix name="home_pin" [size]="20" class="prefix" />
+            <input matInput [value]="currentQuery()" (input)="search('current', $any($event.target).value)"
+                   placeholder="Cerca città…" [matAutocomplete]="currentAuto" />
+            <mat-autocomplete #currentAuto="matAutocomplete" (optionSelected)="pickPlace('current', $event.option.value)">
+              @if (results().kind === 'current') {
+                @for (p of results().places; track $index) { <mat-option [value]="p">{{ placeLabel(p) }}</mat-option> }
+              }
+            </mat-autocomplete>
+          </mat-form-field>
+        }
+
+        <mat-form-field appearance="outline">
+          <mat-label>Sistema di case</mat-label>
+          <mat-select [value]="form().houseSystem" (selectionChange)="patch({ houseSystem: $event.value })">
+            <mat-option value="Placidus">Placidus</mat-option>
+            <mat-option value="WholeSign">Segno intero (ellenistico)</mat-option>
+            <mat-option value="Porphyry">Porfirio</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <div class="field"><span>Scuole attive: come leggere i segnali sul corpo</span>
+          @for (s of catalog.schools(); track s.id) {
+            <mat-checkbox class="block school-check" [checked]="schools().includes(s.id)"
+                          [disabled]="schools().length === 1 && schools().includes(s.id)"
+                          (change)="toggleSchool(s.id)">
+              <span class="school-line"><app-icon [name]="s.icon" [size]="18" /> {{ s.name }}
+                <small class="muted">{{ s.tradition }}</small></span>
+            </mat-checkbox>
           }
         </div>
 
-        <label class="field"><span>Fuso orario alla nascita (UTC {{ offsetLabel() }})</span>
-          <input type="number" step="15" [value]="form().offsetMinutes"
-                 (change)="patch({ offsetMinutes: +$any($event.target).value })" />
-          <small class="muted">Minuti rispetto a UTC, ora legale compresa. Viene proposto in automatico: controllalo per le nascite prima degli anni '80.</small>
-        </label>
-
-        <label class="check">
-          <input type="checkbox" [checked]="form().sameAsBirth" (change)="patch({ sameAsBirth: !form().sameAsBirth })" />
-          vivo nel luogo di nascita
-        </label>
-
-        @if (!form().sameAsBirth) {
-          <div class="field"><span>Dove vivi ora (luce del giorno, meteo)</span>
-            <div class="place">
-              <input [value]="currentQuery()" (input)="search('current', $any($event.target).value)" placeholder="Cerca città…" />
-              @if (results().kind === 'current' && results().places.length) {
-                <ul class="suggest">
-                  @for (p of results().places; track $index) {
-                    <li (click)="pickPlace('current', p)">{{ placeLabel(p) }}</li>
-                  }
-                </ul>
-              }
-            </div>
-          </div>
-        }
-
-        <div class="row2">
-          <label class="field"><span>Sistema di case</span>
-            <select [value]="form().houseSystem" (change)="patch({ houseSystem: $any($event.target).value })">
-              <option value="Placidus">Placidus</option>
-              <option value="WholeSign">Segno intero (ellenistico)</option>
-              <option value="Porphyry">Porfirio</option>
-            </select>
-          </label>
-          <label class="field"><span>Regole (scuola)</span>
-            <select [value]="form().ruleSetId" (change)="patch({ ruleSetId: $any($event.target).value })">
-              @for (r of rulesets(); track r.id) { <option [value]="r.id">{{ r.name }}</option> }
-            </select>
-          </label>
-        </div>
-
         <div class="actions">
-          <button class="btn primary" (click)="save()" [disabled]="!valid() || saving()">Salva</button>
-          @if (form().id) { <button class="btn" (click)="newProfile()">Nuovo profilo</button> }
+          <button matButton="filled" (click)="save()" [disabled]="!valid() || saving()">Salva</button>
+          @if (form().id) { <button matButton="outlined" (click)="newProfile()">Nuovo profilo</button> }
           @if (error()) { <span class="error">{{ error() }}</span> }
         </div>
       </section>
@@ -118,8 +143,10 @@ interface Form {
           <ul class="profiles">
             @for (p of store.profiles(); track p.id) {
               <li [class.current]="p.id === store.current()?.id">
-                <button class="link" (click)="edit(p)">{{ p.name }}</button>
-                <button class="link danger" (click)="remove(p)" title="Elimina">×</button>
+                <button matButton (click)="edit(p)">{{ p.name }}</button>
+                <button matIconButton (click)="remove(p)" matTooltip="Elimina">
+                  <span class="material-symbols-rounded">delete</span>
+                </button>
               </li>
             }
           </ul>
@@ -154,7 +181,7 @@ export class ProfilePage {
 
   protected readonly glyph = BODY_GLYPH;
   protected readonly form = signal<Form>(emptyForm());
-  protected readonly rulesets = signal<RuleSetInfo[]>([]);
+  protected readonly catalog = inject(CatalogStore);
   protected readonly natal = signal<NatalChart | null>(null);
   protected readonly birthQuery = signal('');
   protected readonly currentQuery = signal('');
@@ -176,12 +203,22 @@ export class ProfilePage {
   });
 
   constructor() {
-    void this.api.rulesets().then((r) => this.rulesets.set(r)).catch(() => {});
     // Load the active profile into the form once the store is ready.
     effect(() => {
       const p = this.store.current();
       if (p && untracked(() => this.form().id) === null) this.edit(p);
     });
+  }
+
+  /** Selected schools; none chosen yet (new profile) = all, as the API does. */
+  protected readonly schools = computed(() =>
+    this.form().schools.length ? this.form().schools : this.catalog.schools().map((s) => s.id),
+  );
+
+  protected toggleSchool(id: string) {
+    const current = this.schools();
+    const next = current.includes(id) ? current.filter((s) => s !== id) : [...current, id];
+    if (next.length) this.patch({ schools: next });
   }
 
   protected patch(p: Partial<Form>) {
@@ -253,7 +290,7 @@ export class ProfilePage {
       currentPlace: current,
       sameAsBirth: same,
       houseSystem: p.houseSystem,
-      ruleSetId: p.ruleSetId,
+      schools: p.schools,
     });
     this.birthQuery.set(p.birthPlace);
     this.currentQuery.set(p.currentPlace);
@@ -287,13 +324,14 @@ export class ProfilePage {
       currentLongitude: current.longitude,
       currentTimeZone: current.timeZone,
       houseSystem: f.houseSystem,
-      ruleSetId: f.ruleSetId,
+      schools: this.schools(),
     };
 
     this.saving.set(true);
     this.error.set(null);
     try {
       const saved = f.id ? await this.api.updateProfile(f.id, input) : await this.api.createProfile(input);
+      this.store.replace(saved);
       await this.store.load();
       this.edit(saved);
       if (!f.id) void this.router.navigate(['/']);
@@ -318,6 +356,6 @@ export class ProfilePage {
 function emptyForm(): Form {
   return {
     id: null, name: '', birthDate: '', birthTime: '12:00', birthTimeKnown: true, offsetMinutes: 60,
-    birthPlace: null, currentPlace: null, sameAsBirth: true, houseSystem: 'Placidus', ruleSetId: 'melothesia-classic',
+    birthPlace: null, currentPlace: null, sameAsBirth: true, houseSystem: 'Placidus', schools: [],
   };
 }

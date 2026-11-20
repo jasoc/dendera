@@ -42,7 +42,7 @@ public sealed record CorrelationFinding(
     string Evidence);
 
 /// <summary>
-/// The Babylonian diary engine: does a signal actually move this person's journal?
+/// Does a signal (or a school's zone activation) actually move this person's journal?
 /// Pure and deterministic (seeded permutations).
 /// </summary>
 public static class CorrelationEngine

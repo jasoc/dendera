@@ -9,6 +9,7 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/insights').then((m) => m.Insights),
     title: 'Dendera · Corrispondenze',
   },
+  { path: 'scuole', loadComponent: () => import('./pages/schools').then((m) => m.Schools), title: 'Dendera · Scuole' },
   { path: 'profilo', loadComponent: () => import('./pages/profile').then((m) => m.ProfilePage), title: 'Dendera · Profilo' },
   { path: '**', redirectTo: '' },
 ];

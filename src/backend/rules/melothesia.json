@@ -1,14 +1,24 @@
 {
-  // Dendera rule set. Rules are hypotheses: the journal + correlation engine tests them.
+  // School: Melotesia. Rules are hypotheses: the journal + correlation engine tests them.
   // Zones must be ids from Dendera.Core/Rules/BodyZones.cs (validated at load).
-  "id": "melothesia-classic",
-  "version": "1.0.0",
-  "name": "Melotesia classica",
-  "description": "Ptolemaic / medieval medical astrology: sign → body part (Zodiac Man), planet → organ system, plus physical signals (light, geomagnetism, weather) read as influences on the same body.",
+  "id": "melothesia",
+  "version": "2.2.0",
+  "name": "Melotesia",
+  "icon": "school-melothesia",
+  "tradition": "Astrologia medica tolemaica e medievale (iatromatematica)",
+  "description": "Ogni segno governa una parte del corpo, dalla testa (Ariete) ai piedi (Pesci), e ogni pianeta un organo o un sistema. Transiti, retrogradazioni, stazioni, Luna ed eclissi attivano le parti corrispondenti; il tema natale dice quali sono più sensibili.",
+  "references": [
+    "Tolomeo, Tetrabiblos (II sec.), libro III, cap. 12: le parti del corpo, i sensi e i tessuti dei pianeti",
+    "Manilio, Astronomica (I sec.), libro II: l'uomo zodiacale",
+    "Nicholas Culpeper, Astrological Judgement of Diseases (1655)",
+    "Calendari medici medievali: la regola di non operare la parte governata dal segno lunare"
+  ],
+  "requires": ["ephemeris"],
+  "baseline": "melothesia",
 
   "correspondences": {
     // Melothesia: signs from head (Aries) to feet (Pisces)
-    "aries": ["head"],
+    "aries": ["head", "brain", "eyes"],
     "taurus": ["throat"],
     "gemini": ["shoulders", "lungs", "nervous-system"],
     "cancer": ["stomach", "mood"],
@@ -17,18 +27,22 @@
     "libra": ["kidneys"],
     "scorpio": ["pelvis"],
     "sagittarius": ["thighs", "liver"],
-    "capricorn": ["knees", "skeleton"],
+    "capricorn": ["knees", "skeleton", "skin"],
     "aquarius": ["calves", "circulation"],
     "pisces": ["feet", "lymph"],
 
-    // Planet → organ / system (traditional, plus modern outer planets)
-    "sun": ["heart", "vitality"],
-    "moon": ["stomach", "sleep", "mood", "lymph"],
-    "mercury": ["nervous-system", "lungs", "shoulders"],
-    "venus": ["kidneys", "throat"],
-    "mars": ["solar-plexus", "circulation", "head"],
-    "jupiter": ["liver", "thighs"],
-    "saturn": ["skeleton", "knees"],
+    // Planet → organ / system (traditional, plus modern outer planets), and the classical planets' humors
+    // (Ptolemy, Galen): Saturn melancholic, Mars and Sun choleric, Jupiter and Venus sanguine, Moon phlegmatic.
+    // The Moon rules the brain and imagination, Mercury reason and memory (medieval physiology).
+    // Senses and tissues after Ptolemy, Tetrabiblos III.12: Sun sight and sinews, Moon taste, Mercury speech and tongue,
+    // Venus smell and flesh, Mars and Saturn the ears, Saturn bones (and skin, later tradition).
+    "sun": ["heart", "vitality", "choleric", "eyes", "sinews"],
+    "moon": ["stomach", "sleep", "mood", "lymph", "brain", "imagination", "phlegmatic", "eyes", "mouth"],
+    "mercury": ["nervous-system", "lungs", "shoulders", "reason", "memory", "mouth"],
+    "venus": ["kidneys", "throat", "sanguine", "nose", "muscles"],
+    "mars": ["solar-plexus", "circulation", "head", "choleric", "ears"],
+    "jupiter": ["liver", "thighs", "sanguine"],
+    "saturn": ["skeleton", "knees", "melancholic", "ears", "skin"],
     "uranus": ["nervous-system", "calves"],
     "neptune": ["lymph", "sleep", "feet"],
     "pluto": ["pelvis", "gut"],
@@ -37,18 +51,6 @@
     "north-node": []
   },
 
-  "aspects": [
-    { "id": "conjunction",    "angle": 0,   "orb": 8, "quality": "fusion",  "major": true },
-    { "id": "opposition",     "angle": 180, "orb": 8, "quality": "tension", "major": true },
-    { "id": "square",         "angle": 90,  "orb": 7, "quality": "tension", "major": true },
-    { "id": "trine",          "angle": 120, "orb": 7, "quality": "flow",    "major": true },
-    { "id": "sextile",        "angle": 60,  "orb": 5, "quality": "flow",    "major": true },
-    { "id": "quincunx",       "angle": 150, "orb": 3, "quality": "tension", "major": false },
-    { "id": "semisquare",     "angle": 45,  "orb": 2, "quality": "tension", "major": false },
-    { "id": "sesquiquadrate", "angle": 135, "orb": 2, "quality": "tension", "major": false }
-  ],
-
-  "orbs": { "transit": 0.4, "sky": 0.5 },
   "natalAmplification": 0.5,
   "saturation": 2.5,
 
@@ -133,58 +135,34 @@
       "text": "Luna vicina alla Terra: marea più forte"
     },
     {
-      "id": "light-deficit",
-      "when": { "kind": "photoperiod", "minIntensity": 0.05 },
-      "effect": { "zones": ["sleep", "mood", "vitality"], "weight": 0.9, "quality": "depletion" },
-      "text": "Poca luce ({detail}): il Sole scende e il ritmo circadiano rallenta"
-    },
-    {
-      "id": "light-change",
-      "when": { "kind": "photoperiod-change", "minIntensity": 0.3 },
-      "effect": { "zones": ["sleep"], "weight": 0.4, "quality": "pressure" },
-      "text": "La luce cambia in fretta ({detail})"
-    },
-    {
       "id": "eclipse-season",
       "when": { "kind": "eclipse" },
       "effect": { "zones": ["vitality", "mood", "nervous-system"], "weight": 0.8, "quality": "tension" },
       "text": "Stagione di eclissi ({label}): i luminari si oscurano"
     },
     {
-      "id": "geomagnetic",
-      "when": { "kind": "geomagnetic", "minIntensity": 0.1 },
-      "effect": { "zones": ["nervous-system", "sleep", "heart", "head"], "weight": 1.0, "quality": "agitation" },
-      "text": "Attività geomagnetica ({detail}): il campo terrestre vibra"
+      "id": "moon-element-fire",
+      "when": { "kind": "placement", "tags": { "body": ["moon"], "sign": ["aries", "leo", "sagittarius"] } },
+      "effect": { "zones": ["choleric"], "weight": 0.3, "quality": "sensitivity" },
+      "text": "Luna in {sign}, segno di Fuoco: il temperamento del giorno si fa collerico"
     },
     {
-      "id": "pressure-drop",
-      "when": { "kind": "pressure-change", "tags": { "direction": ["drop"] }, "minIntensity": 0.15 },
-      "effect": { "zones": ["head", "knees", "skeleton"], "weight": 0.8, "quality": "pressure" },
-      "text": "Pressione in calo ({detail})"
+      "id": "moon-element-earth",
+      "when": { "kind": "placement", "tags": { "body": ["moon"], "sign": ["taurus", "virgo", "capricorn"] } },
+      "effect": { "zones": ["melancholic"], "weight": 0.3, "quality": "sensitivity" },
+      "text": "Luna in {sign}, segno di Terra: il temperamento del giorno si fa melanconico"
     },
     {
-      "id": "pressure-rise",
-      "when": { "kind": "pressure-change", "tags": { "direction": ["rise"] }, "minIntensity": 0.15 },
-      "effect": { "zones": ["head"], "weight": 0.3, "quality": "pressure" },
-      "text": "Pressione in salita ({detail})"
+      "id": "moon-element-air",
+      "when": { "kind": "placement", "tags": { "body": ["moon"], "sign": ["gemini", "libra", "aquarius"] } },
+      "effect": { "zones": ["sanguine"], "weight": 0.3, "quality": "sensitivity" },
+      "text": "Luna in {sign}, segno di Aria: il temperamento del giorno si fa sanguigno"
     },
     {
-      "id": "low-pressure",
-      "when": { "kind": "pressure", "minIntensity": 0.2 },
-      "effect": { "zones": ["head", "vitality"], "weight": 0.4, "quality": "depletion" },
-      "text": "Bassa pressione ({detail})"
-    },
-    {
-      "id": "temperature-swing",
-      "when": { "kind": "temperature-swing", "minIntensity": 0.2 },
-      "effect": { "zones": ["circulation", "vitality"], "weight": 0.4, "quality": "tension" },
-      "text": "Sbalzo termico ({detail})"
-    },
-    {
-      "id": "humidity",
-      "when": { "kind": "humidity", "minIntensity": 0.3 },
-      "effect": { "zones": ["skeleton", "lymph"], "weight": 0.3, "quality": "pressure" },
-      "text": "Umidità alta ({detail})"
+      "id": "moon-element-water",
+      "when": { "kind": "placement", "tags": { "body": ["moon"], "sign": ["cancer", "scorpio", "pisces"] } },
+      "effect": { "zones": ["phlegmatic"], "weight": 0.3, "quality": "sensitivity" },
+      "text": "Luna in {sign}, segno di Acqua: il temperamento del giorno si fa flemmatico"
     }
   ]
 }

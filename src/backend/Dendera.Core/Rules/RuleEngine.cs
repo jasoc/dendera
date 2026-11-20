@@ -5,6 +5,7 @@ using Dendera.Core.Signals;
 namespace Dendera.Core.Rules;
 
 public sealed record ZoneContribution(
+    string SchoolId,
     string RuleId,
     string SignalKey,
     string SignalLabel,
@@ -15,18 +16,27 @@ public sealed record ZoneContribution(
 public sealed record ZoneActivation(
     string Zone,
     string Label,
+    string Layer,
     bool Systemic,
     double Score, // saturated activation 0..1 = 1 - e^(-raw/saturation)
 
     double Raw,
     string? DominantQuality,
-    IReadOnlyDictionary<string, double> ByQuality,
+    IReadOnlyDictionary<string, double> ByQuality, // raw sum per quality
+    IReadOnlyDictionary<string, double> QualityScores, // saturated 0..1 per quality, same formula as Score
     double NatalBaseline,
-    IReadOnlyList<ZoneContribution> Contributions);
+    IReadOnlyList<ZoneContribution> Contributions,
+    IReadOnlyDictionary<string, double> BySchool); // school id → that school's score
 
-/// <summary>Pure: signals + rule set (+ natal baseline) → body zone activations with explanations.</summary>
+/// <summary>Pure: signals + one school (+ natal baseline) → body zone activations with explanations.</summary>
 public static partial class RuleEngine
 {
+    /// <summary>
+    /// Two passes. First, rules on signals from the influences. Then, if the school has rules of kind
+    /// <see cref="SignalKinds.Node"/>, every node it activated becomes an internal signal (intensity = its score,
+    /// quality = its dominant quality) and those rules run once on them: the school's own relations between
+    /// nodes ("liver → anger"). One pass only, so no cycles.
+    /// </summary>
     public static IReadOnlyList<ZoneActivation> Evaluate(
         RuleSet rules,
         IReadOnlyList<Signal> signals,
@@ -34,46 +44,73 @@ public static partial class RuleEngine
     {
         var contributions = new Dictionary<string, List<ZoneContribution>>();
 
-        foreach (var signal in signals)
-        foreach (var rule in rules.Rules)
+        void Apply(IEnumerable<Signal> source, bool nodeRules)
         {
-            if (!Matches(rule.When, signal)) continue;
-
-            var quality = rule.Effect.Quality ?? signal.Tag("quality") ?? "neutral";
-            var amount = rule.Effect.Weight * signal.Intensity * TagWeight(rule.Effect, signal);
-            if (amount <= 0) continue;
-
-            var text = Render(rule.Text, signal);
-            foreach (var zone in ZonesFor(rules, rule.Effect, signal))
+            foreach (var signal in source)
+            foreach (var rule in rules.Rules)
             {
-                var baseline = natalBaseline?.GetValueOrDefault(zone) ?? 0;
-                var amplified = amount * (1 + rules.NatalAmplification * baseline);
-                if (!contributions.TryGetValue(zone, out var list)) contributions[zone] = list = [];
-                list.Add(new ZoneContribution(rule.Id, signal.Key, signal.Label, quality, amplified, text));
+                if ((rule.When.Kind == SignalKinds.Node) != nodeRules || !Matches(rule.When, signal)) continue;
+
+                var quality = rule.Effect.Quality ?? signal.Tag("quality") ?? "neutral";
+                var amount = rule.Effect.Weight * signal.Intensity * TagWeight(rule.Effect, signal);
+                if (amount <= 0) continue;
+
+                var text = Render(rule.Text, signal);
+                foreach (var zone in ZonesFor(rules, rule.Effect, signal))
+                {
+                    var baseline = natalBaseline?.GetValueOrDefault(zone) ?? 0;
+                    var amplified = amount * (1 + rules.NatalAmplification * baseline);
+                    if (!contributions.TryGetValue(zone, out var list)) contributions[zone] = list = [];
+                    list.Add(new ZoneContribution(rules.Id, rule.Id, signal.Key, signal.Label, quality, amplified, text));
+                }
             }
         }
 
-        return BodyZones.Local.Concat(BodyZones.Systemic).Select(zone =>
+        Apply(signals, nodeRules: false);
+        if (rules.Rules.Any(r => r.When.Kind == SignalKinds.Node))
+        {
+            var at = signals.Count > 0 ? signals[0].At : default;
+            var nodes = Build(rules, contributions, natalBaseline)
+                .Where(z => z.Score > 0)
+                .Select(z => new Signal(
+                    $"node:{z.Zone}", SignalKinds.Node, "body", at, z.Score, Math.Round(z.Score * 100), "%",
+                    new Dictionary<string, string> { ["node"] = z.Zone, ["quality"] = z.DominantQuality ?? "neutral" },
+                    z.Label, $"{Math.Round(z.Score * 100)}%"))
+                .ToList();
+            Apply(nodes, nodeRules: true);
+        }
+
+        return Build(rules, contributions, natalBaseline);
+    }
+
+    private static IReadOnlyList<ZoneActivation> Build(
+        RuleSet rules,
+        Dictionary<string, List<ZoneContribution>> contributions,
+        IReadOnlyDictionary<string, double>? natalBaseline) =>
+        BodyZones.Ordered.Select(zone =>
         {
             var list = contributions.GetValueOrDefault(zone) ?? [];
             var raw = list.Sum(c => c.Amount);
             var byQuality = list.GroupBy(c => c.Quality).ToDictionary(g => g.Key, g => g.Sum(c => c.Amount));
             var dominant = byQuality.Count == 0 ? null : byQuality.MaxBy(kv => kv.Value).Key;
+            var score = 1 - Math.Exp(-raw / rules.Saturation);
             return new ZoneActivation(
                 zone,
                 Lexicon.Name(zone),
+                BodyZones.LayerOf(zone),
                 BodyZones.Systemic.Contains(zone),
-                1 - Math.Exp(-raw / rules.Saturation),
+                score,
                 raw,
                 dominant,
                 byQuality,
+                byQuality.ToDictionary(kv => kv.Key, kv => 1 - Math.Exp(-kv.Value / rules.Saturation)),
                 natalBaseline?.GetValueOrDefault(zone) ?? 0,
-                list.OrderByDescending(c => c.Amount).ToList());
+                list.OrderByDescending(c => c.Amount).ToList(),
+                new Dictionary<string, double> { [rules.Id] = score });
         }).ToList();
-    }
 
     /// <summary>
-    /// Natal emphasis per zone (0..1): which zones the birth chart makes "sensitive".
+    /// Melothesia natal emphasis per zone (0..1): which zones the birth chart makes "sensitive".
     /// Luminaries and the Ascendant weigh most; each point marks its sign's zones and its own zones.
     /// </summary>
     public static IReadOnlyDictionary<string, double> NatalBaseline(RuleSet rules, NatalChart chart)
@@ -110,7 +147,7 @@ public static partial class RuleEngine
         foreach (var (tag, accepted) in when.Tags)
         {
             var value = signal.Tag(tag);
-            if (value is null || !accepted.Contains(value)) return false;
+            if (value is null || !(accepted.Contains(value) || accepted.Contains("*"))) return false;
         }
         return true;
     }

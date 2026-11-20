@@ -1,0 +1,516 @@
+{
+  // School: Yoga tantrico. Chakras and nadis (Dendera.Core/Rules/BodyZones.cs, layers "chakras" and "nadis").
+  // Planet -> chakra correspondences are a modern synthesis (Frawley), stated as such in the references.
+  // Rules of kind "node" run in the second pass. Rules are hypotheses: the journal tests them.
+
+  "id": "tantric-yoga",
+  "version": "1.0.0",
+  "name": "Yoga tantrico",
+  "icon": "school-tantric-yoga",
+  "tradition": "Yoga tantrico e Hatha yoga: chakra, nadi, Kundalini; Svara yoga per i ritmi di Sole e Luna",
+  "description": "Lungo la colonna corre Sushumna, il canale centrale; intorno si intrecciano Ida, la corrente lunare, e Pingala, quella solare. Dove si incrociano stanno i chakra, i centri del corpo sottile, dalla radice (Muladhara) alla sommità del capo (Sahasrara). Di giorno prevale Pingala, di notte Ida; all'alba e al tramonto si apre Sushumna. I pianeti toccano ciascuno il suo chakra, e ogni chakra governa una regione del corpo.",
+  "references": [
+    "Pūrṇānanda, Ṣaṭ-cakra-nirūpaṇa (1577): i sei chakra e il loto dai mille petali",
+    "Arthur Avalon (John Woodroffe), The Serpent Power (1919): traduzione e commento del Ṣaṭ-cakra-nirūpaṇa",
+    "Svātmārāma, Haṭha Yoga Pradīpikā (XV sec.): nadi, Kundalini, Ida lunare e Pingala solare",
+    "Śiva Svarodaya (svara yoga): il respiro nelle nadi secondo il giorno, la notte e la metà del mese lunare",
+    "David Frawley, Astrology of the Seers (1990): pianeti e chakra (sintesi moderna, non nei testi classici)"
+  ],
+  "requires": [
+    "ephemeris"
+  ],
+  "baseline": "none",
+  "tables": [
+    {
+      "title": "I chakra (Ṣaṭ-cakra-nirūpaṇa) e i pianeti (Frawley)",
+      "columns": [
+        "Chakra",
+        "Sede",
+        "Petali",
+        "Elemento",
+        "Bija",
+        "Pianeta"
+      ],
+      "rows": [
+        [
+          "Muladhara",
+          "perineo",
+          "4",
+          "terra",
+          "LAM",
+          "Saturno"
+        ],
+        [
+          "Svadhisthana",
+          "sotto l'ombelico",
+          "6",
+          "acqua",
+          "VAM",
+          "Giove"
+        ],
+        [
+          "Manipura",
+          "ombelico",
+          "10",
+          "fuoco",
+          "RAM",
+          "Marte"
+        ],
+        [
+          "Anahata",
+          "cuore",
+          "12",
+          "aria",
+          "YAM",
+          "Venere"
+        ],
+        [
+          "Vishuddha",
+          "gola",
+          "16",
+          "etere",
+          "HAM",
+          "Mercurio"
+        ],
+        [
+          "Ajna",
+          "tra le sopracciglia",
+          "2",
+          "mente",
+          "OM",
+          "Sole e Luna"
+        ],
+        [
+          "Sahasrara",
+          "sommità del capo",
+          "1000",
+          "oltre gli elementi",
+          "—",
+          "—"
+        ]
+      ]
+    },
+    {
+      "title": "Le tre nadi principali",
+      "columns": [
+        "Nadi",
+        "Lato",
+        "Natura",
+        "Prevale"
+      ],
+      "rows": [
+        [
+          "Ida",
+          "sinistra",
+          "lunare, fresca, ricettiva",
+          "di notte; Luna crescente"
+        ],
+        [
+          "Pingala",
+          "destra",
+          "solare, calda, attiva",
+          "di giorno; Luna calante"
+        ],
+        [
+          "Sushumna",
+          "centro",
+          "il canale della Kundalini",
+          "all'alba e al tramonto (sandhya)"
+        ]
+      ]
+    }
+  ],
+  "correspondences": {
+    "saturn": [
+      "muladhara"
+    ],
+    "jupiter": [
+      "svadhisthana"
+    ],
+    "mars": [
+      "manipura"
+    ],
+    "venus": [
+      "anahata"
+    ],
+    "mercury": [
+      "vishuddha"
+    ],
+    "sun": [
+      "ajna",
+      "pingala"
+    ],
+    "moon": [
+      "ajna",
+      "ida"
+    ]
+  },
+  "natalAmplification": 0,
+  "saturation": 2.5,
+  "rules": [
+    {
+      "id": "day-pingala",
+      "when": {
+        "kind": "day-phase",
+        "tags": {
+          "light": [
+            "day"
+          ]
+        }
+      },
+      "effect": {
+        "zones": [
+          "pingala"
+        ],
+        "weight": 0.5,
+        "quality": "flow"
+      },
+      "text": "Giorno ({detail}): prevale Pingala, la nadi solare"
+    },
+    {
+      "id": "night-ida",
+      "when": {
+        "kind": "day-phase",
+        "tags": {
+          "light": [
+            "night"
+          ]
+        }
+      },
+      "effect": {
+        "zones": [
+          "ida"
+        ],
+        "weight": 0.5,
+        "quality": "flow"
+      },
+      "text": "Notte ({detail}): prevale Ida, la nadi lunare"
+    },
+    {
+      "id": "sandhya-sushumna",
+      "when": {
+        "kind": "day-phase",
+        "tags": {
+          "light": [
+            "twilight"
+          ]
+        }
+      },
+      "effect": {
+        "zones": [
+          "sushumna"
+        ],
+        "weight": 0.8,
+        "quality": "fusion"
+      },
+      "text": "Sandhya, l'ora di passaggio ({detail}): Ida e Pingala si equilibrano e si apre Sushumna"
+    },
+    {
+      "id": "paksha-ida",
+      "when": {
+        "kind": "lunar-phase",
+        "tags": {
+          "paksha": [
+            "shukla"
+          ]
+        }
+      },
+      "effect": {
+        "zones": [
+          "ida"
+        ],
+        "weight": 0.3,
+        "quality": "sensitivity"
+      },
+      "text": "Metà chiara del mese lunare (tithi {tithi}): secondo lo Shiva Swarodaya la Luna crescente favorisce Ida"
+    },
+    {
+      "id": "paksha-pingala",
+      "when": {
+        "kind": "lunar-phase",
+        "tags": {
+          "paksha": [
+            "krishna"
+          ]
+        }
+      },
+      "effect": {
+        "zones": [
+          "pingala"
+        ],
+        "weight": 0.3,
+        "quality": "sensitivity"
+      },
+      "text": "Metà scura del mese lunare (tithi {tithi}): la Luna calante favorisce Pingala"
+    },
+    {
+      "id": "transit-chakra",
+      "when": {
+        "kind": "transit-aspect"
+      },
+      "effect": {
+        "zonesFrom": [
+          "transitBody"
+        ],
+        "weight": 0.6,
+        "tagWeights": {
+          "transitBody": {
+            "saturn": 1.0,
+            "jupiter": 0.8,
+            "mars": 0.8,
+            "venus": 0.6,
+            "mercury": 0.6,
+            "sun": 0.7,
+            "moon": 0.4,
+            "*": 0
+          }
+        }
+      },
+      "text": "{transitBody} in {aspect} con {natalPoint} natale: il pianeta tocca il suo chakra"
+    },
+    {
+      "id": "retrograde-chakra",
+      "when": {
+        "kind": "retrograde"
+      },
+      "effect": {
+        "zonesFrom": [
+          "body"
+        ],
+        "weight": 0.4,
+        "quality": "inward"
+      },
+      "text": "{body} retrogrado: l'energia del suo chakra si ritira verso l'interno"
+    },
+    {
+      "id": "station-chakra",
+      "when": {
+        "kind": "station",
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zonesFrom": [
+          "body"
+        ],
+        "weight": 0.6,
+        "quality": "pressure"
+      },
+      "text": "{body} stazionario: il suo chakra si concentra"
+    },
+    {
+      "id": "eclipse-ajna",
+      "when": {
+        "kind": "eclipse"
+      },
+      "effect": {
+        "zones": [
+          "ajna"
+        ],
+        "weight": 0.6,
+        "quality": "tension"
+      },
+      "text": "Eclissi ({label}): Sole e Luna, i luminari di Ajna, si oscurano"
+    },
+    {
+      "id": "region-muladhara",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "muladhara"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "pelvis",
+          "feet",
+          "skeleton"
+        ],
+        "weight": 0.35
+      },
+      "text": "{label} sollecitato ({detail}): la radice: perineo, gambe, ossa"
+    },
+    {
+      "id": "region-svadhisthana",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "svadhisthana"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "pelvis",
+          "kidneys"
+        ],
+        "weight": 0.35
+      },
+      "text": "{label} sollecitato ({detail}): il bacino e i reni"
+    },
+    {
+      "id": "region-manipura",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "manipura"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "solar-plexus",
+          "stomach",
+          "liver"
+        ],
+        "weight": 0.35
+      },
+      "text": "{label} sollecitato ({detail}): il fuoco digestivo dell'ombelico"
+    },
+    {
+      "id": "region-anahata",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "anahata"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "heart",
+          "lungs"
+        ],
+        "weight": 0.35
+      },
+      "text": "{label} sollecitato ({detail}): cuore e polmoni"
+    },
+    {
+      "id": "region-vishuddha",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "vishuddha"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "throat",
+          "shoulders"
+        ],
+        "weight": 0.35
+      },
+      "text": "{label} sollecitato ({detail}): gola, collo e braccia"
+    },
+    {
+      "id": "region-ajna",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "ajna"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "brain",
+          "eyes"
+        ],
+        "weight": 0.35
+      },
+      "text": "{label} sollecitato ({detail}): la fronte e gli occhi"
+    },
+    {
+      "id": "region-sahasrara",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "sahasrara"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "brain"
+        ],
+        "weight": 0.35
+      },
+      "text": "{label} sollecitato ({detail}): la sommità del capo"
+    },
+    {
+      "id": "sushumna-rises",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "sushumna"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "sahasrara"
+        ],
+        "weight": 0.4,
+        "quality": "fusion"
+      },
+      "text": "Sushumna aperta ({detail}): l'energia può salire fino a Sahasrara"
+    },
+    {
+      "id": "ida-mind",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "ida"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "imagination",
+          "ajna"
+        ],
+        "weight": 0.25
+      },
+      "text": "Ida ({detail}): la corrente lunare nutre la mente e l'immaginazione"
+    },
+    {
+      "id": "pingala-body",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "pingala"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "vitality",
+          "ajna"
+        ],
+        "weight": 0.25
+      },
+      "text": "Pingala ({detail}): la corrente solare nutre il corpo e l'azione"
+    }
+  ]
+}

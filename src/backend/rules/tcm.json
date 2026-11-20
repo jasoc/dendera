@@ -1,0 +1,1279 @@
+{
+  // School: Medicina tradizionale cinese, full vocabulary: the twelve zang-fu with their meridians, seven emotions,
+  // five Shen, vital substances, six external excesses, the five-element correspondences and the Sheng/Ke cycles.
+  // Rules of kind "node" run in the second pass: an organ this school activated moves what it houses.
+  // Rules are hypotheses: the journal + correlation engine tests them. Nodes: Dendera.Core/Rules/BodyZones.cs.
+
+  "id": "tcm",
+  "version": "2.0.0",
+  "name": "Medicina tradizionale cinese",
+  "icon": "school-tcm",
+  "tradition": "Medicina classica cinese: zang-fu e meridiani, cinque elementi, sette emozioni, cinque Shen, sei eccessi",
+  "description": "Il corpo è fatto di funzioni, non di pezzi: dodici organi zang-fu legati dai meridiani, ciascuno con il suo elemento, la sua emozione e il suo spirito. Ogni stagione e ogni ora mettono in primo piano un organo; il clima esterno (Vento, Freddo, Calore, Calore estivo, Umidità, Secchezza) entra dagli organi più esposti. Un organo sollecitato muove l'emozione e lo Shen che ospita, i suoi organi di senso e i suoi tessuti, e attraverso i cicli Sheng e Ke nutre o sottomette gli altri.",
+  "references": [
+    "Huangdi Neijing Suwen (Canone interno dell'Imperatore Giallo, II–I sec. a.C.): capp. 2 (stagioni), 4 e 5 (cinque elementi e corrispondenze), 8 (funzioni degli organi), 23 (cinque Shen), 39 (le emozioni e il Qi)",
+    "Huangdi Neijing Lingshu: cap. 8 (Benshen, gli spiriti), cap. 10 (i meridiani)",
+    "Nanjing (Classico delle difficoltà, I–II sec.): cicli Sheng e Ke",
+    "Zhang Zhongjing, Shanghan Lun (~200 d.C.): le malattie da Freddo",
+    "Chen Wuze, Sanyin Jiyi Bingzheng Fanglun (1174): le tre cause, i sei eccessi esterni e le sette emozioni interne",
+    "Huainanzi (II sec. a.C.): i 24 termini solari",
+    "Ziwu liuzhu: l'orologio dei meridiani (agopuntura classica)"
+  ],
+  "requires": [
+    "tcm-calendar",
+    "open-meteo",
+    "ephemeris"
+  ],
+  "baseline": "none",
+  "tables": [
+    {
+      "title": "Le corrispondenze dei cinque elementi (Suwen cap. 5)",
+      "columns": [
+        "Elemento",
+        "Stagione",
+        "Zang",
+        "Fu",
+        "Emozione",
+        "Shen",
+        "Senso",
+        "Tessuto",
+        "Sapore",
+        "Colore",
+        "Clima",
+        "Direzione"
+      ],
+      "rows": [
+        [
+          "Legno",
+          "Primavera",
+          "Fegato",
+          "Vescica biliare",
+          "Collera",
+          "Hun",
+          "Occhi",
+          "Tendini",
+          "Acido",
+          "Verde",
+          "Vento",
+          "Est"
+        ],
+        [
+          "Fuoco",
+          "Estate",
+          "Cuore, Pericardio",
+          "Intestino tenue, Triplice riscaldatore",
+          "Gioia (e Spavento)",
+          "Shen",
+          "Lingua",
+          "Vasi",
+          "Amaro",
+          "Rosso",
+          "Calore",
+          "Sud"
+        ],
+        [
+          "Terra",
+          "Tarda estate",
+          "Milza-Pancreas",
+          "Stomaco",
+          "Rimuginio",
+          "Yi",
+          "Bocca",
+          "Muscoli",
+          "Dolce",
+          "Giallo",
+          "Umidità",
+          "Centro"
+        ],
+        [
+          "Metallo",
+          "Autunno",
+          "Polmone",
+          "Intestino crasso",
+          "Tristezza, Preoccupazione",
+          "Po",
+          "Naso",
+          "Pelle",
+          "Piccante",
+          "Bianco",
+          "Secchezza",
+          "Ovest"
+        ],
+        [
+          "Acqua",
+          "Inverno",
+          "Rene",
+          "Vescica",
+          "Paura (e Spavento)",
+          "Zhi",
+          "Orecchie",
+          "Ossa",
+          "Salato",
+          "Nero",
+          "Freddo",
+          "Nord"
+        ]
+      ]
+    },
+    {
+      "title": "Le sette emozioni e il Qi (Suwen cap. 39)",
+      "columns": [
+        "Emozione",
+        "Organo",
+        "Effetto sul Qi"
+      ],
+      "rows": [
+        [
+          "Collera (nu)",
+          "Fegato",
+          "lo fa salire"
+        ],
+        [
+          "Gioia (xi)",
+          "Cuore",
+          "lo rallenta, lo allenta"
+        ],
+        [
+          "Rimuginio (si)",
+          "Milza",
+          "lo annoda"
+        ],
+        [
+          "Preoccupazione (you)",
+          "Polmone, Milza",
+          "lo annoda"
+        ],
+        [
+          "Tristezza (bei)",
+          "Polmone",
+          "lo consuma"
+        ],
+        [
+          "Paura (kong)",
+          "Rene",
+          "lo fa scendere"
+        ],
+        [
+          "Spavento (jing)",
+          "Cuore, Rene",
+          "lo disperde"
+        ]
+      ]
+    },
+    {
+      "title": "I due cicli dei cinque elementi (Nanjing)",
+      "columns": [
+        "Ciclo",
+        "Sequenza",
+        "Significato"
+      ],
+      "rows": [
+        [
+          "Sheng (generazione)",
+          "Legno → Fuoco → Terra → Metallo → Acqua → Legno",
+          "la madre nutre il figlio"
+        ],
+        [
+          "Ke (controllo)",
+          "Legno → Terra → Acqua → Fuoco → Metallo → Legno",
+          "ogni elemento ne tiene a freno un altro; in eccesso lo aggredisce"
+        ]
+      ]
+    },
+    {
+      "title": "L'orologio dei meridiani (ziwu liuzhu)",
+      "columns": [
+        "Ore",
+        "Meridiano",
+        "Ore",
+        "Meridiano"
+      ],
+      "rows": [
+        [
+          "03–05",
+          "Polmone",
+          "15–17",
+          "Vescica"
+        ],
+        [
+          "05–07",
+          "Intestino crasso",
+          "17–19",
+          "Rene"
+        ],
+        [
+          "07–09",
+          "Stomaco",
+          "19–21",
+          "Pericardio"
+        ],
+        [
+          "09–11",
+          "Milza-Pancreas",
+          "21–23",
+          "Triplice riscaldatore"
+        ],
+        [
+          "11–13",
+          "Cuore",
+          "23–01",
+          "Vescica biliare"
+        ],
+        [
+          "13–15",
+          "Intestino tenue",
+          "01–03",
+          "Fegato"
+        ]
+      ]
+    }
+  ],
+  "correspondences": {
+    "liver": [
+      "zf-liver"
+    ],
+    "gallbladder": [
+      "zf-gallbladder"
+    ],
+    "heart": [
+      "zf-heart"
+    ],
+    "small-intestine": [
+      "zf-small-intestine"
+    ],
+    "pericardium": [
+      "zf-pericardium"
+    ],
+    "triple-burner": [
+      "zf-triple-burner"
+    ],
+    "spleen": [
+      "zf-spleen"
+    ],
+    "stomach": [
+      "zf-stomach"
+    ],
+    "lung": [
+      "zf-lung"
+    ],
+    "large-intestine": [
+      "zf-large-intestine"
+    ],
+    "kidney": [
+      "zf-kidney"
+    ],
+    "bladder": [
+      "zf-bladder"
+    ]
+  },
+  "natalAmplification": 0,
+  "saturation": 2.5,
+  "rules": [
+    {
+      "id": "season-wood",
+      "when": {
+        "kind": "solar-term",
+        "tags": {
+          "element": [
+            "wood"
+          ]
+        }
+      },
+      "effect": {
+        "zones": [
+          "zf-liver",
+          "zf-gallbladder"
+        ],
+        "weight": 0.6,
+        "quality": "sensitivity"
+      },
+      "text": "Stagione del Legno ({term}): Fegato e Vescica biliare in primo piano"
+    },
+    {
+      "id": "season-fire",
+      "when": {
+        "kind": "solar-term",
+        "tags": {
+          "element": [
+            "fire"
+          ]
+        }
+      },
+      "effect": {
+        "zones": [
+          "zf-heart",
+          "zf-small-intestine",
+          "zf-pericardium",
+          "zf-triple-burner"
+        ],
+        "weight": 0.6,
+        "quality": "sensitivity"
+      },
+      "text": "Stagione del Fuoco ({term}): Cuore, Intestino tenue, Pericardio e Triplice riscaldatore"
+    },
+    {
+      "id": "season-earth",
+      "when": {
+        "kind": "solar-term",
+        "tags": {
+          "element": [
+            "earth"
+          ]
+        }
+      },
+      "effect": {
+        "zones": [
+          "zf-spleen",
+          "zf-stomach"
+        ],
+        "weight": 0.6,
+        "quality": "sensitivity"
+      },
+      "text": "Tarda estate, stagione della Terra ({term}): Milza-Pancreas e Stomaco"
+    },
+    {
+      "id": "season-metal",
+      "when": {
+        "kind": "solar-term",
+        "tags": {
+          "element": [
+            "metal"
+          ]
+        }
+      },
+      "effect": {
+        "zones": [
+          "zf-lung",
+          "zf-large-intestine"
+        ],
+        "weight": 0.6,
+        "quality": "sensitivity"
+      },
+      "text": "Stagione del Metallo ({term}): Polmone e Intestino crasso"
+    },
+    {
+      "id": "season-water",
+      "when": {
+        "kind": "solar-term",
+        "tags": {
+          "element": [
+            "water"
+          ]
+        }
+      },
+      "effect": {
+        "zones": [
+          "zf-kidney",
+          "zf-bladder"
+        ],
+        "weight": 0.6,
+        "quality": "sensitivity"
+      },
+      "text": "Stagione dell'Acqua ({term}): Rene e Vescica"
+    },
+    {
+      "id": "season-yang",
+      "when": {
+        "kind": "solar-term",
+        "tags": {
+          "element": [
+            "wood",
+            "fire"
+          ]
+        }
+      },
+      "effect": {
+        "zones": [
+          "yang"
+        ],
+        "weight": 0.4,
+        "quality": "flow",
+        "tagWeights": {
+          "element": {
+            "wood": 0.5,
+            "fire": 1.0
+          }
+        }
+      },
+      "text": "{term}: la stagione fa crescere lo Yang (primavera ed estate)"
+    },
+    {
+      "id": "season-yin",
+      "when": {
+        "kind": "solar-term",
+        "tags": {
+          "element": [
+            "metal",
+            "water"
+          ]
+        }
+      },
+      "effect": {
+        "zones": [
+          "yin"
+        ],
+        "weight": 0.4,
+        "quality": "flow",
+        "tagWeights": {
+          "element": {
+            "metal": 0.5,
+            "water": 1.0
+          }
+        }
+      },
+      "text": "{term}: la stagione fa crescere lo Yin (autunno e inverno)"
+    },
+    {
+      "id": "day-yang",
+      "when": {
+        "kind": "day-phase",
+        "tags": {
+          "light": [
+            "day"
+          ]
+        }
+      },
+      "effect": {
+        "zones": [
+          "yang"
+        ],
+        "weight": 0.3,
+        "quality": "flow"
+      },
+      "text": "Giorno ({detail}): è il tempo dello Yang"
+    },
+    {
+      "id": "night-yin",
+      "when": {
+        "kind": "day-phase",
+        "tags": {
+          "light": [
+            "night"
+          ]
+        }
+      },
+      "effect": {
+        "zones": [
+          "yin"
+        ],
+        "weight": 0.3,
+        "quality": "flow"
+      },
+      "text": "Notte ({detail}): è il tempo dello Yin"
+    },
+    {
+      "id": "organ-clock",
+      "when": {
+        "kind": "organ-clock"
+      },
+      "effect": {
+        "zonesFrom": [
+          "organ"
+        ],
+        "weight": 0.25,
+        "quality": "flow"
+      },
+      "text": "Ore di massimo flusso del meridiano di {organ} ({detail})"
+    },
+    {
+      "id": "excess-wind",
+      "when": {
+        "kind": "wind",
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "zf-liver",
+          "head",
+          "sinews",
+          "skin"
+        ],
+        "weight": 0.7,
+        "quality": "agitation"
+      },
+      "text": "Eccesso di Vento ({detail}): «capo delle cento malattie», entra dalla pelle, sale alla testa, scuote il Fegato e i tendini"
+    },
+    {
+      "id": "excess-cold",
+      "when": {
+        "kind": "temperature",
+        "tags": {
+          "level": [
+            "cold"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "zf-kidney",
+          "zf-bladder",
+          "sinews",
+          "skeleton"
+        ],
+        "weight": 0.7,
+        "quality": "inward"
+      },
+      "text": "Eccesso di Freddo ({detail}): contrae tendini e articolazioni, pesa sul Rene"
+    },
+    {
+      "id": "cold-injures-yang",
+      "when": {
+        "kind": "temperature",
+        "tags": {
+          "level": [
+            "cold"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "yang"
+        ],
+        "weight": 0.5,
+        "quality": "depletion"
+      },
+      "text": "Il Freddo ({detail}) consuma lo Yang"
+    },
+    {
+      "id": "excess-heat",
+      "when": {
+        "kind": "temperature",
+        "tags": {
+          "level": [
+            "heat"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "zf-heart",
+          "shen"
+        ],
+        "weight": 0.7,
+        "quality": "agitation"
+      },
+      "text": "Eccesso di Calore ({detail}): agita il Cuore e lo Shen"
+    },
+    {
+      "id": "heat-injures-yin",
+      "when": {
+        "kind": "temperature",
+        "tags": {
+          "level": [
+            "heat"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "yin",
+          "jinye"
+        ],
+        "weight": 0.5,
+        "quality": "depletion"
+      },
+      "text": "Il Calore ({detail}) consuma lo Yin e i Liquidi"
+    },
+    {
+      "id": "excess-summer-heat",
+      "when": {
+        "kind": "muggy",
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "zf-heart",
+          "zf-pericardium",
+          "zf-spleen",
+          "qi",
+          "jinye"
+        ],
+        "weight": 0.7,
+        "quality": "depletion"
+      },
+      "text": "Calore estivo, shu ({detail}): disperde il Qi e i Liquidi, appesantisce la Milza"
+    },
+    {
+      "id": "excess-damp",
+      "when": {
+        "kind": "humidity",
+        "minIntensity": 0.3
+      },
+      "effect": {
+        "zones": [
+          "zf-spleen",
+          "zf-stomach",
+          "muscles",
+          "jinye"
+        ],
+        "weight": 0.6,
+        "quality": "pressure"
+      },
+      "text": "Eccesso di Umidità ({detail}): appesantisce Milza e Stomaco, ristagna nei muscoli"
+    },
+    {
+      "id": "excess-dryness",
+      "when": {
+        "kind": "dryness",
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "zf-lung",
+          "nose",
+          "skin",
+          "jinye"
+        ],
+        "weight": 0.6,
+        "quality": "depletion"
+      },
+      "text": "Eccesso di Secchezza ({detail}): ferisce il Polmone, il naso e la pelle, asciuga i Liquidi"
+    },
+    {
+      "id": "emotion-anger",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-liver"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "anger"
+        ],
+        "weight": 0.6
+      },
+      "text": "{label} sollecitato ({detail}): la Collera ferisce il Fegato e fa salire il Qi"
+    },
+    {
+      "id": "emotion-joy",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-heart"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "joy"
+        ],
+        "weight": 0.6
+      },
+      "text": "{label} sollecitato ({detail}): la Gioia abita il Cuore; in eccesso rallenta il Qi"
+    },
+    {
+      "id": "emotion-fright-heart",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-heart"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "fright"
+        ],
+        "weight": 0.3
+      },
+      "text": "{label} sollecitato ({detail}): lo Spavento disperde il Qi del Cuore"
+    },
+    {
+      "id": "emotion-pensiveness",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-spleen"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "pensiveness"
+        ],
+        "weight": 0.6
+      },
+      "text": "{label} sollecitata ({detail}): il Rimuginio annoda il Qi della Milza"
+    },
+    {
+      "id": "emotion-grief",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-lung"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "grief"
+        ],
+        "weight": 0.6
+      },
+      "text": "{label} sollecitato ({detail}): la Tristezza consuma il Qi del Polmone"
+    },
+    {
+      "id": "emotion-worry",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-lung"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "worry"
+        ],
+        "weight": 0.4
+      },
+      "text": "{label} sollecitato ({detail}): la Preoccupazione annoda il Qi del Polmone"
+    },
+    {
+      "id": "emotion-fear",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-kidney"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "fear"
+        ],
+        "weight": 0.6
+      },
+      "text": "{label} sollecitato ({detail}): la Paura fa scendere il Qi e ferisce il Rene"
+    },
+    {
+      "id": "emotion-fright-kidney",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-kidney"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "fright"
+        ],
+        "weight": 0.3
+      },
+      "text": "{label} sollecitato ({detail}): lo Spavento disperde il Qi del Rene"
+    },
+    {
+      "id": "spirit-shen",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-heart"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "shen"
+        ],
+        "weight": 0.5
+      },
+      "text": "{label} sollecitato ({detail}): il Cuore ospita lo Shen"
+    },
+    {
+      "id": "spirit-hun",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-liver"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "hun"
+        ],
+        "weight": 0.5
+      },
+      "text": "{label} sollecitato ({detail}): il Fegato ospita lo Hun"
+    },
+    {
+      "id": "spirit-po",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-lung"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "po"
+        ],
+        "weight": 0.5
+      },
+      "text": "{label} sollecitato ({detail}): il Polmone ospita il Po"
+    },
+    {
+      "id": "spirit-yi",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-spleen"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "yi"
+        ],
+        "weight": 0.5
+      },
+      "text": "{label} sollecitata ({detail}): la Milza ospita lo Yi"
+    },
+    {
+      "id": "spirit-zhi",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-kidney"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "zhi"
+        ],
+        "weight": 0.5
+      },
+      "text": "{label} sollecitato ({detail}): il Rene ospita lo Zhi"
+    },
+    {
+      "id": "opens-liver",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-liver"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "eyes",
+          "sinews"
+        ],
+        "weight": 0.35
+      },
+      "text": "{label} sollecitato ({detail}): il Fegato si apre negli occhi e nutre i tendini"
+    },
+    {
+      "id": "opens-heart",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-heart"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "mouth",
+          "circulation"
+        ],
+        "weight": 0.35
+      },
+      "text": "{label} sollecitato ({detail}): il Cuore si apre nella lingua e governa i vasi"
+    },
+    {
+      "id": "opens-spleen",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-spleen"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "mouth",
+          "muscles"
+        ],
+        "weight": 0.35
+      },
+      "text": "{label} sollecitata ({detail}): la Milza si apre nella bocca e nutre i muscoli"
+    },
+    {
+      "id": "opens-lung",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-lung"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "nose",
+          "skin"
+        ],
+        "weight": 0.35
+      },
+      "text": "{label} sollecitato ({detail}): il Polmone si apre nel naso e governa la pelle"
+    },
+    {
+      "id": "opens-kidney",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-kidney"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "ears",
+          "skeleton"
+        ],
+        "weight": 0.35
+      },
+      "text": "{label} sollecitato ({detail}): il Rene si apre nelle orecchie e governa le ossa"
+    },
+    {
+      "id": "substance-qi-lung",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-lung"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "qi"
+        ],
+        "weight": 0.4
+      },
+      "text": "{label} sollecitato ({detail}): il Polmone governa il Qi"
+    },
+    {
+      "id": "substance-qi-spleen",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-spleen"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "qi"
+        ],
+        "weight": 0.4
+      },
+      "text": "{label} sollecitata ({detail}): la Milza produce il Qi dal nutrimento"
+    },
+    {
+      "id": "substance-xue-heart",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-heart"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "xue"
+        ],
+        "weight": 0.4
+      },
+      "text": "{label} sollecitato ({detail}): il Cuore governa il Sangue"
+    },
+    {
+      "id": "substance-xue-liver",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-liver"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "xue"
+        ],
+        "weight": 0.4
+      },
+      "text": "{label} sollecitato ({detail}): il Fegato conserva il Sangue"
+    },
+    {
+      "id": "substance-jing",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-kidney"
+          ]
+        },
+        "minIntensity": 0.2
+      },
+      "effect": {
+        "zones": [
+          "jing"
+        ],
+        "weight": 0.4
+      },
+      "text": "{label} sollecitato ({detail}): il Rene conserva il Jing"
+    },
+    {
+      "id": "sheng-liver",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-liver"
+          ]
+        },
+        "minIntensity": 0.3
+      },
+      "effect": {
+        "zones": [
+          "zf-heart"
+        ],
+        "weight": 0.3,
+        "quality": "flow"
+      },
+      "text": "Ciclo Sheng ({label} {detail}): il Legno nutre il Fuoco"
+    },
+    {
+      "id": "sheng-heart",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-heart"
+          ]
+        },
+        "minIntensity": 0.3
+      },
+      "effect": {
+        "zones": [
+          "zf-spleen"
+        ],
+        "weight": 0.3,
+        "quality": "flow"
+      },
+      "text": "Ciclo Sheng ({label} {detail}): il Fuoco nutre la Terra"
+    },
+    {
+      "id": "sheng-spleen",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-spleen"
+          ]
+        },
+        "minIntensity": 0.3
+      },
+      "effect": {
+        "zones": [
+          "zf-lung"
+        ],
+        "weight": 0.3,
+        "quality": "flow"
+      },
+      "text": "Ciclo Sheng ({label} {detail}): la Terra nutre il Metallo"
+    },
+    {
+      "id": "sheng-lung",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-lung"
+          ]
+        },
+        "minIntensity": 0.3
+      },
+      "effect": {
+        "zones": [
+          "zf-kidney"
+        ],
+        "weight": 0.3,
+        "quality": "flow"
+      },
+      "text": "Ciclo Sheng ({label} {detail}): il Metallo nutre l'Acqua"
+    },
+    {
+      "id": "sheng-kidney",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-kidney"
+          ]
+        },
+        "minIntensity": 0.3
+      },
+      "effect": {
+        "zones": [
+          "zf-liver"
+        ],
+        "weight": 0.3,
+        "quality": "flow"
+      },
+      "text": "Ciclo Sheng ({label} {detail}): l'Acqua nutre il Legno"
+    },
+    {
+      "id": "ke-liver",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-liver"
+          ]
+        },
+        "minIntensity": 0.6
+      },
+      "effect": {
+        "zones": [
+          "zf-spleen"
+        ],
+        "weight": 0.4,
+        "quality": "tension"
+      },
+      "text": "Ciclo Ke ({label} {detail}): il Legno sottomette la Terra quando è in eccesso"
+    },
+    {
+      "id": "ke-heart",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-heart"
+          ]
+        },
+        "minIntensity": 0.6
+      },
+      "effect": {
+        "zones": [
+          "zf-lung"
+        ],
+        "weight": 0.4,
+        "quality": "tension"
+      },
+      "text": "Ciclo Ke ({label} {detail}): il Fuoco fonde il Metallo quando è in eccesso"
+    },
+    {
+      "id": "ke-spleen",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-spleen"
+          ]
+        },
+        "minIntensity": 0.6
+      },
+      "effect": {
+        "zones": [
+          "zf-kidney"
+        ],
+        "weight": 0.4,
+        "quality": "tension"
+      },
+      "text": "Ciclo Ke ({label} {detail}): la Terra argina l'Acqua quando è in eccesso"
+    },
+    {
+      "id": "ke-lung",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-lung"
+          ]
+        },
+        "minIntensity": 0.6
+      },
+      "effect": {
+        "zones": [
+          "zf-liver"
+        ],
+        "weight": 0.4,
+        "quality": "tension"
+      },
+      "text": "Ciclo Ke ({label} {detail}): il Metallo taglia il Legno quando è in eccesso"
+    },
+    {
+      "id": "ke-kidney",
+      "when": {
+        "kind": "node",
+        "tags": {
+          "node": [
+            "zf-kidney"
+          ]
+        },
+        "minIntensity": 0.6
+      },
+      "effect": {
+        "zones": [
+          "zf-heart"
+        ],
+        "weight": 0.4,
+        "quality": "tension"
+      },
+      "text": "Ciclo Ke ({label} {detail}): l'Acqua spegne il Fuoco quando è in eccesso"
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  // School: Human Design. Rules are hypotheses: the journal + correlation engine tests them.
+  // Centers are mapped onto the existing body zones. Zones must be ids from Dendera.Core/Rules/BodyZones.cs.
+  "id": "human-design",
+  "version": "1.1.0",
+  "name": "Human Design",
+  "icon": "school-human-design",
+  "tradition": "Sistema sintetico del 1987 (Ra Uru Hu): I Ching, astrologia, chakra, Kabbalah",
+  "description": "Lo zodiaco è diviso nelle 64 porte dell'I Ching; ogni porta appartiene a uno dei nove centri del corpo. Il tema natale (nascita e 88° di Sole prima) definisce alcuni centri; quelli aperti sono i più esposti al condizionamento dei transiti. Un transito che completa un canale collega due centri per qualche ora o giorno.",
+  "references": [
+    "Ra Uru Hu, The Definitive Book of Human Design (2011)",
+    "Ra Uru Hu, Rave I'Ching (Jovian Archive)",
+    "I Ching, il Libro dei Mutamenti (ordine King Wen dei 64 esagrammi)"
+  ],
+  "requires": ["human-design"],
+  "baseline": "human-design",
+
+  "correspondences": {
+    // HD center → body zones: Head = inspiration, Ajna = the mind, Spleen = survival fears, Solar plexus = emotional wave
+    "hd-head": ["head", "imagination"],
+    "hd-ajna": ["head", "brain", "reason"],
+    "hd-throat": ["throat"],
+    "hd-g": ["liver", "circulation"],
+    "hd-ego": ["heart", "stomach"],
+    "hd-sacral": ["pelvis", "vitality"],
+    "hd-solar-plexus": ["solar-plexus", "kidneys", "mood"],
+    "hd-spleen": ["lymph", "fear"],
+    "hd-root": ["kidneys", "pelvis"]
+  },
+
+  "natalAmplification": 0.5,
+  "saturation": 2.5,
+
+  "rules": [
+    {
+      "id": "transit-gate",
+      "when": { "kind": "hd-gate" },
+      "effect": {
+        "zonesFrom": ["center"],
+        "weight": 0.25,
+        "quality": "flow",
+        "tagWeights": {
+          "body": { "sun": 1.0, "earth": 1.0, "north-node": 0.6, "south-node": 0.6, "moon": 0.4, "*": 0.5 }
+        }
+      },
+      "text": "{body} in porta {gate}: attiva il {center}"
+    },
+    {
+      "id": "open-center",
+      "when": { "kind": "hd-gate", "tags": { "natalCenter": ["open"] } },
+      "effect": {
+        "zonesFrom": ["center"],
+        "weight": 0.35,
+        "quality": "sensitivity",
+        "tagWeights": {
+          "body": { "sun": 1.0, "earth": 1.0, "north-node": 0.6, "south-node": 0.6, "moon": 0.4, "*": 0.5 }
+        }
+      },
+      "text": "{body} in porta {gate} condiziona il {center}, aperto nel tuo tema (condizionamento)"
+    },
+    {
+      "id": "channel",
+      "when": { "kind": "hd-gate", "tags": { "channel": ["*"] } },
+      "effect": {
+        "zonesFrom": ["center", "channelCenter"],
+        "weight": 0.8,
+        "quality": "fusion",
+        "tagWeights": {
+          "body": { "sun": 1.0, "earth": 1.0, "north-node": 0.6, "south-node": 0.6, "moon": 0.4, "*": 0.6 }
+        }
+      },
+      "text": "{body} in porta {gate} completa il canale {channel} col tuo tema: {center} e {channelCenter} si collegano"
+    }
+  ]
+}

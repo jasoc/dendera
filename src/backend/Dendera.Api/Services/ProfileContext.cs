@@ -6,23 +6,30 @@ using Dendera.Core.Signals;
 namespace Dendera.Api.Services;
 
 /// <summary>Everything derived from a stored profile that the pipeline needs.</summary>
-public sealed record ProfileContext(Profile Profile, NatalChart Natal, RuleSet Rules, SkyContext Sky)
+public sealed record ProfileContext(Profile Profile, NatalChart Natal, IReadOnlyList<RuleSet> Schools, NatalBaselines Baselines)
 {
     public TimeSpan CurrentOffset(DateTimeOffset at) => TimeZones.OffsetAt(Profile.CurrentTimeZone, at);
 }
 
 public sealed class ProfileContextFactory(IEphemeris ephemeris, RuleSetCatalog catalog)
 {
-    public ProfileContext Create(Profile profile, string? ruleSetId = null)
+    /// <param name="schools">Override of the profile's active schools (not saved); null → the profile's own.</param>
+    public ProfileContext Create(Profile profile, IEnumerable<string>? schools = null)
     {
         var system = Enum.TryParse<HouseSystem>(profile.HouseSystem, true, out var hs) ? hs : HouseSystem.Placidus;
         var natal = ChartCalculator.Compute(ephemeris,
             new BirthData(profile.BirthUtc, profile.BirthLatitude, profile.BirthLongitude), system);
-        var rules = catalog.Get(ruleSetId ?? profile.RuleSetId);
-        var sky = new SkyContext(profile.CurrentLatitude, profile.CurrentLongitude, natal, rules.Aspects,
-            rules.Orbs.Transit, rules.Orbs.Sky);
-        return new ProfileContext(profile, natal, rules, sky);
+        var active = catalog.Resolve(schools ?? profile.SchoolIds);
+        var baselines = NatalBaselines.For(active, natal,
+            () => HumanDesign.Compute(ephemeris, natal.Birth.BirthUtc).DefinedCenters);
+        return new ProfileContext(profile, natal, active, baselines);
     }
+
+    /// <summary>Parses "?schools=a,b" (null or blank → no override).</summary>
+    public static IReadOnlyList<string>? ParseOverride(string? schools) =>
+        string.IsNullOrWhiteSpace(schools)
+            ? null
+            : schools.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 }
 
 public static class TimeZones

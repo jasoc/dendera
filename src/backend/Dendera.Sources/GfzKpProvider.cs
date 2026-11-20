@@ -13,7 +13,22 @@ namespace Dendera.Sources;
 public sealed class GfzKpProvider(HttpClient http, IMemoryCache cache) : ISignalProvider
 {
     public const string BaseUrl = "https://kp.gfz.de/";
-    public string Source => "gfz";
+
+    public static readonly InfluenceInfo Influence = new(
+        "gfz",
+        "Geomagnetismo (indice Kp)",
+        "Quanto è disturbato il campo magnetico terrestre, misurato ogni 3 ore da una rete mondiale di " +
+        "magnetometri: 0 è calmo, 5 o più è una tempesta geomagnetica.",
+        "gfz",
+        ProviderKinds.Api,
+        "GFZ Potsdam Kp API",
+        "https://kp.gfz.de",
+        "CC BY 4.0",
+        Reliabilities.Primary,
+        [new(SignalKinds.Geomagnetic, "Indice Kp planetario (0–9) ogni 3 ore, storico e tempo quasi reale")]);
+
+    public InfluenceInfo Info => Influence;
+    public string Source => Influence.Id;
     public TimeSpan SampleValidity => TimeSpan.FromHours(6); // GFZ nowcast lags a few hours
 
     public async Task<IReadOnlyList<Signal>> GetAsync(SignalQuery query, CancellationToken cancellationToken)

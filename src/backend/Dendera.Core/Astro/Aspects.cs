@@ -1,7 +1,32 @@
 namespace Dendera.Core.Astro;
 
-/// <summary>An aspect definition. Comes from the rule set JSON, so each "school" can define its own.</summary>
+/// <summary>An aspect definition: angle, base orb, traditional quality.</summary>
 public sealed record AspectSpec(string Id, double Angle, double Orb, string Quality, bool Major = true);
+
+/// <summary>
+/// The aspects the ephemeris influence detects. Facts are computed once for every school; a school that wants
+/// only Ptolemaic aspects filters on the signal's "aspect" tag in its rules.
+/// </summary>
+public static class AspectCatalog
+{
+    public static readonly IReadOnlyList<AspectSpec> Default =
+    [
+        new("conjunction", 0, 8, "fusion"),
+        new("opposition", 180, 8, "tension"),
+        new("square", 90, 7, "tension"),
+        new("trine", 120, 7, "flow"),
+        new("sextile", 60, 5, "flow"),
+        new("quincunx", 150, 3, "tension", Major: false),
+        new("semisquare", 45, 2, "tension", Major: false),
+        new("sesquiquadrate", 135, 2, "tension", Major: false),
+    ];
+
+    /// <summary>Multiplier applied to base orbs for transits to natal points.</summary>
+    public const double TransitOrbFactor = 0.4;
+
+    /// <summary>Multiplier applied to base orbs for planet-to-planet aspects in the sky (major aspects only).</summary>
+    public const double SkyOrbFactor = 0.5;
+}
 
 public sealed record AspectHit(AspectSpec Aspect, double Deviation, double OrbUsed, bool Applying)
 {

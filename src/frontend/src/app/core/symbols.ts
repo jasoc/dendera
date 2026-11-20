@@ -45,6 +45,21 @@ export const QUALITY_NAME: Record<string, string> = {
   sensitivity: 'sensibilità', neutral: 'neutra',
 };
 
+/** Same colours as the --q-* variables in styles.scss, for canvas/WebGL drawing. */
+export const QUALITY_HEX: Record<string, string> = {
+  tension: '#e0565b',
+  flow: '#3fb8a5',
+  fusion: '#e2b84a',
+  inward: '#a081e6',
+  agitation: '#f08a3c',
+  depletion: '#5182e0',
+  pressure: '#9aa3b5',
+  sensitivity: '#e07bb5',
+  neutral: '#7d7891',
+};
+
+export const qualityHex = (q: string | null | undefined) => QUALITY_HEX[q ?? 'neutral'] ?? QUALITY_HEX['neutral'];
+
 export const qualityColor = (q: string | null | undefined) => QUALITY_COLOR[q ?? 'neutral'] ?? 'var(--q-neutral)';
 
 export const METRIC_NAME: Record<string, string> = {
@@ -79,4 +94,17 @@ export const KIND_GROUP: Record<string, string> = {
   'pressure-change': 'Meteo',
   'temperature-swing': 'Meteo',
   humidity: 'Meteo',
+  dryness: 'Meteo',
+  wind: 'Meteo',
+  temperature: 'Meteo',
+  schumann: 'Sole e magnetosfera',
+  'solar-term': 'Calendario cinese',
+  'organ-clock': 'Calendario cinese',
+  'hd-gate': 'Human Design',
 };
+
+/** Display order of the signal groups (Adesso, Timeline). */
+export const GROUP_ORDER = [
+  'Cielo', 'Transiti sul tema natale', 'Aspetti nel cielo', 'Luna e luce', 'Sole e magnetosfera', 'Meteo',
+  'Calendario cinese', 'Human Design',
+];

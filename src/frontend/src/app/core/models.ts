@@ -36,6 +36,7 @@ export interface Signal {
 }
 
 export interface ZoneContribution {
+  schoolId: string;
   ruleId: string;
   signalKey: string;
   signalLabel: string;
@@ -44,21 +45,31 @@ export interface ZoneContribution {
   text: string;
 }
 
+export type BodyLayer =
+  | 'soma' | 'systems' | 'temperament' | 'emotions' | 'mind'
+  | 'zangfu' | 'spirits' | 'substances' | 'chakras' | 'nadis';
+
 export interface ZoneActivation {
   zone: string;
   label: string;
+  layer: BodyLayer;
   systemic: boolean;
   score: number;
   raw: number;
   dominantQuality: string | null;
+  /** Raw sum of contributions per quality. */
   byQuality: Record<string, number>;
+  /** Saturated 0..1 per quality (same formula as score, schools combined). */
+  qualityScores: Record<string, number>;
   natalBaseline: number;
   contributions: ZoneContribution[];
+  /** school id → that school's score (0..1). */
+  bySchool: Record<string, number>;
 }
 
 export interface Reading {
   at: string;
-  ruleSetId: string;
+  schoolIds: string[];
   sky: PlacedPoint[];
   natal: NatalChart | null;
   signals: Signal[];
@@ -116,7 +127,7 @@ export interface Profile {
   currentLongitude: number;
   currentTimeZone: string | null;
   houseSystem: string;
-  ruleSetId: string;
+  schools: string[];
 }
 
 export type ProfileInput = Omit<Profile, 'id' | 'birthUtc'>;
@@ -130,12 +141,90 @@ export interface Place {
   timeZone: string | null;
 }
 
-export interface RuleSetInfo {
+// ---------- catalog: influences (signal sources), schools (rule sets), body zones ----------
+
+export interface InfluenceKind {
+  kind: string;
+  description: string;
+}
+
+export interface InfluenceInfo {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  providerKind: 'library' | 'api' | 'computed';
+  providerName: string;
+  url: string;
+  license: string;
+  reliability: 'primary' | 'derived';
+  kinds: InfluenceKind[];
+}
+
+export interface InfluenceStatus {
+  ok: boolean;
+  samples: number;
+  error: string | null;
+  checkedAt: string;
+}
+
+export interface CatalogZoneRef {
+  id: string;
+  label: string;
+}
+
+export interface CatalogRule {
+  id: string;
+  kind: string;
+  kindLabel: string;
+  tags: Record<string, string[]> | null;
+  /** Italian rendering of tags: "elemento: Legno". */
+  conditions: string[];
+  minIntensity: number;
+  zones: CatalogZoneRef[];
+  zonesFrom: string[];
+  zonesFromText: string | null;
+  weight: number;
+  quality: string | null;
+  qualityLabel: string | null;
+  text: string;
+}
+
+export interface CatalogSchool {
   id: string;
   version: string;
   name: string;
   description: string;
-  rules: number;
+  tradition: string;
+  icon: string;
+  references: string[];
+  requires: string[];
+  baseline: string;
+  baselineText: string;
+  saturation: number;
+  natalAmplification: number;
+  /** Reference tables of the tradition (five elements, chakras…). */
+  tables: { title: string; columns: string[]; rows: string[][] }[];
+  rules: CatalogRule[];
+  correspondences: { symbol: string; label: string; zones: CatalogZoneRef[] }[];
+}
+
+/** A node of the body model (zones are its soma layer). */
+export interface CatalogZone {
+  id: string;
+  label: string;
+  layer: BodyLayer;
+  layerLabel: string;
+  systemic: boolean;
+  /** Soma node it lives in (3D placement); null = the whole body. */
+  seat: string | null;
+  description: string;
+}
+
+export interface Catalog {
+  influences: { info: InfluenceInfo; status: InfluenceStatus | null }[];
+  schools: CatalogSchool[];
+  zones: CatalogZone[];
 }
 
 export const METRICS = ['energy', 'mood', 'sleep', 'focus', 'stress', 'gut', 'head', 'body'] as const;

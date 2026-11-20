@@ -1,0 +1,79 @@
+{
+  // School: Biometeorologia. Rules are hypotheses: the journal + correlation engine tests them.
+  // Zones must be ids from Dendera.Core/Rules/BodyZones.cs (validated at load).
+  "id": "biometeorology",
+  "version": "1.1.0",
+  "name": "Biometeorologia",
+  "icon": "school-biometeorology",
+  "tradition": "Biometeorologia umana: effetti di tempo atmosferico, luce e geomagnetismo sul corpo",
+  "description": "Il corpo risponde all'ambiente fisico: poca luce rallenta il ritmo circadiano, i cali di pressione si sentono in testa e nelle articolazioni, le tempeste geomagnetiche agitano sonno e sistema nervoso. Nessun simbolismo: solo grandezze fisiche misurate nel luogo in cui vivi.",
+  "references": [
+    "Ippocrate, Arie, acque, luoghi (V sec. a.C.)",
+    "International Society of Biometeorology (dal 1956), International Journal of Biometeorology",
+    "Ricerca sulla meteoropatia e sul disturbo affettivo stagionale (SAD)",
+    "Studi eliobiologici di A. L. Čiževskij (anni '20–'30) sull'attività solare e geomagnetica",
+    "Risonanze di Schumann: W. O. Schumann (1952); ipotesi di R. Wever sui ritmi circadiani (anni '60–'70)"
+  ],
+  "requires": ["ephemeris", "gfz", "open-meteo", "schumann"],
+  "baseline": "none",
+
+  "natalAmplification": 0,
+  "saturation": 2.5,
+
+  "rules": [
+    {
+      "id": "light-deficit",
+      "when": { "kind": "photoperiod", "minIntensity": 0.05 },
+      "effect": { "zones": ["sleep", "mood", "vitality", "melancholic"], "weight": 0.9, "quality": "depletion" },
+      "text": "Poca luce ({detail}): il Sole scende e il ritmo circadiano rallenta"
+    },
+    {
+      "id": "light-change",
+      "when": { "kind": "photoperiod-change", "minIntensity": 0.3 },
+      "effect": { "zones": ["sleep"], "weight": 0.4, "quality": "pressure" },
+      "text": "La luce cambia in fretta ({detail})"
+    },
+    {
+      "id": "geomagnetic",
+      "when": { "kind": "geomagnetic", "minIntensity": 0.1 },
+      "effect": { "zones": ["nervous-system", "sleep", "heart", "head", "fear"], "weight": 1.0, "quality": "agitation" },
+      "text": "Attività geomagnetica ({detail}): il campo terrestre vibra"
+    },
+    {
+      "id": "pressure-drop",
+      "when": { "kind": "pressure-change", "tags": { "direction": ["drop"] }, "minIntensity": 0.15 },
+      "effect": { "zones": ["head", "knees", "skeleton"], "weight": 0.8, "quality": "pressure" },
+      "text": "Pressione in calo ({detail})"
+    },
+    {
+      "id": "pressure-rise",
+      "when": { "kind": "pressure-change", "tags": { "direction": ["rise"] }, "minIntensity": 0.15 },
+      "effect": { "zones": ["head"], "weight": 0.3, "quality": "pressure" },
+      "text": "Pressione in salita ({detail})"
+    },
+    {
+      "id": "low-pressure",
+      "when": { "kind": "pressure", "minIntensity": 0.2 },
+      "effect": { "zones": ["head", "vitality"], "weight": 0.4, "quality": "depletion" },
+      "text": "Bassa pressione ({detail})"
+    },
+    {
+      "id": "temperature-swing",
+      "when": { "kind": "temperature-swing", "minIntensity": 0.2 },
+      "effect": { "zones": ["circulation", "vitality"], "weight": 0.4, "quality": "tension" },
+      "text": "Sbalzo termico ({detail})"
+    },
+    {
+      "id": "humidity",
+      "when": { "kind": "humidity", "minIntensity": 0.3 },
+      "effect": { "zones": ["skeleton", "lymph"], "weight": 0.3, "quality": "pressure" },
+      "text": "Umidità alta ({detail})"
+    },
+    {
+      "id": "schumann",
+      "when": { "kind": "schumann", "minIntensity": 0.6 },
+      "effect": { "zones": ["nervous-system", "sleep", "mood"], "weight": 0.5, "quality": "agitation" },
+      "text": "Risonanza di Schumann alta ({detail}): dato derivato, da prendere con cautela"
+    }
+  ]
+}

@@ -9,7 +9,7 @@ import {
   Profile,
   ProfileInput,
   ReadingResponse,
-  RuleSetInfo,
+  Catalog,
   TimelineResponse,
 } from './models';
 
@@ -32,8 +32,11 @@ export class Api {
   deleteProfile = (id: number) => firstValueFrom(this.http.delete<void>(`${this.base}/profiles/${id}`));
   natal = (id: number) => this.get<NatalChart>(`/profiles/${id}/natal`);
 
-  reading = (id: number, at?: string, ruleset?: string) =>
-    this.get<ReadingResponse>(`/profiles/${id}/reading`, { at, ruleset });
+  /** The active schools are the profile's own (the toggle saves them with setSchools). */
+  reading = (id: number, at?: string) => this.get<ReadingResponse>(`/profiles/${id}/reading`, { at });
+
+  setSchools = (id: number, schools: string[]) =>
+    firstValueFrom(this.http.put<Profile>(`${this.base}/profiles/${id}/schools`, { schools }));
 
   timeline = (id: number, from: string, to: string, stepHours = 6) =>
     this.get<TimelineResponse>(`/profiles/${id}/timeline`, { from, to, stepHours });
@@ -48,5 +51,5 @@ export class Api {
 
   geocode = (q: string) => this.get<Place[]>('/geocode', { q });
   tzOffset = (tz: string, local: string) => this.get<{ offsetMinutes: number }>('/timezone/offset', { tz, local });
-  rulesets = () => this.get<RuleSetInfo[]>('/rulesets');
+  catalog = () => this.get<Catalog>('/catalog');
 }

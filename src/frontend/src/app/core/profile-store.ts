@@ -15,6 +15,9 @@ export class ProfileStore {
   readonly current = computed(
     () => this.profiles().find((p) => p.id === this.currentId()) ?? this.profiles()[0] ?? null,
   );
+  /** Active schools of the current profile. Pages reload through current(), which changes on every toggle. */
+  readonly schools = computed(() => this.current()?.schools ?? []);
+  readonly saving = signal(false);
 
   async load(): Promise<void> {
     try {
@@ -22,6 +25,24 @@ export class ProfileStore {
     } finally {
       this.loaded.set(true);
     }
+  }
+
+  /** Turns a school on/off for the current profile (saved, so correlations stay reproducible). Keeps at least one. */
+  async toggle(schoolId: string): Promise<void> {
+    const p = this.current();
+    if (!p || this.saving()) return;
+    const active = p.schools.includes(schoolId) ? p.schools.filter((s) => s !== schoolId) : [...p.schools, schoolId];
+    if (active.length === 0) return;
+    this.saving.set(true);
+    try {
+      this.replace(await this.api.setSchools(p.id, active));
+    } finally {
+      this.saving.set(false);
+    }
+  }
+
+  replace(profile: Profile): void {
+    this.profiles.update((list) => list.map((x) => (x.id === profile.id ? profile : x)));
   }
 
   select(id: number): void {

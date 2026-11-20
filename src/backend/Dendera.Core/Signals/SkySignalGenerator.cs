@@ -4,16 +4,7 @@ namespace Dendera.Core.Signals;
 
 /// <param name="Latitude">Where the person is now (photoperiod depends on it).</param>
 /// <param name="Natal">If present, transit-to-natal aspects are generated.</param>
-/// <param name="Aspects">Aspect definitions (from the rule set).</param>
-/// <param name="TransitOrbFactor">Multiplier applied to aspect orbs for transits to natal points.</param>
-/// <param name="SkyOrbFactor">Multiplier applied to aspect orbs for planet-to-planet aspects in the sky.</param>
-public sealed record SkyContext(
-    double Latitude,
-    double Longitude,
-    NatalChart? Natal,
-    IReadOnlyList<AspectSpec> Aspects,
-    double TransitOrbFactor = 0.4,
-    double SkyOrbFactor = 0.5);
+public sealed record SkyContext(double Latitude, double Longitude, NatalChart? Natal);
 
 /// <summary>
 /// Pure generator of sky signals from the ephemeris. No I/O: same input, same output.
@@ -46,6 +37,7 @@ public sealed class SkySignalGenerator(IEphemeris ephemeris)
         if (ctx.Natal is not null) Transits(at, sky, ctx, signals);
         Lunar(at, signals);
         Photoperiod(at, sky, ctx, signals);
+        DayPhase(at, sky, ctx, signals);
         Eclipses(at, eclipses, signals);
 
         return signals;
@@ -113,7 +105,7 @@ public sealed class SkySignalGenerator(IEphemeris ephemeris)
         {
             var a = bodies[i];
             var b = bodies[j];
-            var hit = AspectFinder.Find(a.Longitude, a.Speed, b.Longitude, b.Speed, ctx.Aspects, ctx.SkyOrbFactor, majorOnly: true);
+            var hit = AspectFinder.Find(a.Longitude, a.Speed, b.Longitude, b.Speed, AspectCatalog.Default, AspectCatalog.SkyOrbFactor, majorOnly: true);
             if (hit is null) continue;
 
             signals.Add(new Signal(
@@ -136,7 +128,7 @@ public sealed class SkySignalGenerator(IEphemeris ephemeris)
         foreach (var t in sky.Where(p => p.Body != Bodies.NorthNode))
         foreach (var n in natal.Points)
         {
-            var hit = AspectFinder.Find(t.Longitude, t.Speed, n.Longitude, 0, ctx.Aspects, ctx.TransitOrbFactor);
+            var hit = AspectFinder.Find(t.Longitude, t.Speed, n.Longitude, 0, AspectCatalog.Default, AspectCatalog.TransitOrbFactor);
             if (hit is null) continue;
 
             signals.Add(new Signal(
@@ -157,10 +149,13 @@ public sealed class SkySignalGenerator(IEphemeris ephemeris)
     {
         var phase = ephemeris.MoonPhase(at);
         var name = PhaseName(phase);
+        // Indian lunar calendar: 30 tithi of 12° of Moon–Sun elongation; the bright half (shukla paksha) is the waxing one.
+        var tithi = Math.Min(30, (int)(Zodiac.Norm(phase) / 12) + 1);
+        var paksha = phase < 180 ? "shukla" : "krishna";
         signals.Add(new Signal(
             "lunar-phase", SignalKinds.LunarPhase, Source, at, Math.Abs(Math.Cos(phase * Zodiac.Rad)),
-            phase, "°", new Dictionary<string, string> { ["phase"] = name },
-            "Fase lunare", $"{Lexicon.Name(name)} ({phase:0}°)"));
+            phase, "°", new Dictionary<string, string> { ["phase"] = name, ["paksha"] = paksha, ["tithi"] = tithi.ToString() },
+            "Fase lunare", $"{Lexicon.Name(name)} ({phase:0}°), tithi {tithi}, {Lexicon.Name(paksha)}"));
 
         const double perigee = 356_400, apogee = 406_700;
         var km = ephemeris.MoonDistanceKm(at);
@@ -188,6 +183,33 @@ public sealed class SkySignalGenerator(IEphemeris ephemeris)
             Math.Round(deltaMin, 2), "min/g",
             new Dictionary<string, string> { ["direction"] = deltaMin < 0 ? "shrinking" : "growing" },
             "Variazione della luce", $"{deltaMin:+0.0;-0.0} min/giorno"));
+    }
+
+    /// <summary>
+    /// Day, night or twilight at the person's place, from the Sun's altitude (equatorial conversion of its ecliptic
+    /// longitude, local sidereal time). Twilight = Sun within ±6° of the horizon: the sandhya of the Indian day.
+    /// </summary>
+    private void DayPhase(DateTimeOffset at, IReadOnlyList<BodyPosition> sky, SkyContext ctx, List<Signal> signals)
+    {
+        var altitude = SunAltitude(at, sky.First(p => p.Body == Bodies.Sun).Longitude, ctx.Latitude, ctx.Longitude, out var rising);
+        var phase = altitude > 6 ? "day" : altitude < -6 ? "night" : rising ? "dawn" : "dusk";
+        signals.Add(new Signal(
+            "day-phase", SignalKinds.DayPhase, Source, at, 1.0, Math.Round(altitude, 1), "° Sole",
+            new Dictionary<string, string> { ["phase"] = phase, ["light"] = altitude > 6 ? "day" : altitude < -6 ? "night" : "twilight" },
+            "Giorno e notte", $"{Lexicon.Name(phase)}, Sole a {altitude:+0;-0}° sull'orizzonte"));
+    }
+
+    public double SunAltitude(DateTimeOffset at, double sunLongitude, double latitude, double longitude, out bool rising)
+    {
+        var eps = ephemeris.Obliquity(at) * Zodiac.Rad;
+        var lambda = sunLongitude * Zodiac.Rad;
+        var ra = Math.Atan2(Math.Sin(lambda) * Math.Cos(eps), Math.Cos(lambda));
+        var dec = Math.Asin(Math.Sin(eps) * Math.Sin(lambda));
+        var lst = (ephemeris.SiderealTimeHours(at) * 15 + longitude) * Zodiac.Rad;
+        var h = lst - ra;
+        var phi = latitude * Zodiac.Rad;
+        rising = Math.Sin(h) < 0; // east of the meridian
+        return Math.Asin(Math.Sin(phi) * Math.Sin(dec) + Math.Cos(phi) * Math.Cos(dec) * Math.Cos(h)) / Zodiac.Rad;
     }
 
     private static void Eclipses(DateTimeOffset at, IReadOnlyList<EclipseEvent> eclipses, List<Signal> signals)

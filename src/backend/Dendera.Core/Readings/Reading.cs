@@ -4,10 +4,10 @@ using Dendera.Core.Signals;
 
 namespace Dendera.Core.Readings;
 
-/// <summary>Everything the UI needs for one instant: sky, natal chart, active signals, body zones.</summary>
+/// <summary>Everything the UI needs for one instant: sky, natal chart, active signals, body zones (all active schools combined).</summary>
 public sealed record Reading(
     DateTimeOffset At,
-    string RuleSetId,
+    IReadOnlyList<string> SchoolIds,
     IReadOnlyList<PlacedPoint> Sky,
     NatalChart? Natal,
     IReadOnlyList<Signal> Signals,
@@ -32,59 +32,77 @@ public sealed record Timeline(
 
 public static class ReadingEngine
 {
+    /// <summary>Source of combined zone tracks (per-school tracks carry the school id as source).</summary>
+    public const string CombinedSource = "schools";
+
     /// <param name="sky">Current positions.</param>
-    /// <param name="signals">All active signals at <paramref name="at"/> (sky + external, already merged).</param>
+    /// <param name="signals">All active signals at <paramref name="at"/> (every influence, already merged).</param>
     public static Reading Compose(
         DateTimeOffset at,
-        RuleSet rules,
+        IReadOnlyList<RuleSet> schools,
+        NatalBaselines? baselines,
         IReadOnlyList<BodyPosition> sky,
         NatalChart? natal,
-        IReadOnlyList<Signal> signals)
-    {
-        var baseline = natal is null ? null : RuleEngine.NatalBaseline(rules, natal);
-        var zones = RuleEngine.Evaluate(rules, signals, baseline);
-        return new Reading(
+        IReadOnlyList<Signal> signals) =>
+        new(
             at,
-            rules.Id,
+            schools.Select(s => s.Id).ToList(),
             ChartCalculator.PlaceSky(sky, natal?.Cusps),
             natal,
             signals.OrderByDescending(s => s.Intensity).ToList(),
-            zones);
-    }
+            SchoolEngine.Evaluate(schools, signals, baselines));
 
     /// <summary>
     /// Builds tracks from samples. <paramref name="frames"/> are the instants where zones are evaluated;
-    /// for each frame, active signals are the sky samples at that instant plus the latest external samples.
+    /// for each frame, active signals are the latest valid samples of every influence (see <see cref="SignalSet.ActiveAt"/>).
+    /// Zone tracks: combined ("zone:{zone}") and, when more than one school is active, per school
+    /// ("zone:{school}:{zone}") so the correlation engine can compare schools against the journal.
     /// </summary>
     public static Timeline BuildTimeline(
         DateTimeOffset from,
         DateTimeOffset to,
-        RuleSet rules,
-        NatalChart? natal,
+        IReadOnlyList<RuleSet> schools,
+        NatalBaselines? baselines,
         IReadOnlyList<Signal> allSamples,
         IReadOnlyList<DateTimeOffset> frames,
         Func<DateTimeOffset, IReadOnlyList<Signal>> activeAt)
     {
         var signalTracks = ToTracks(allSamples.Where(s => s.Kind != SignalKinds.Placement));
 
-        var baseline = natal is null ? null : RuleEngine.NatalBaseline(rules, natal);
-        var zoneSamples = new Dictionary<string, List<SignalSample>>();
-        var zoneLabels = new Dictionary<string, (string label, bool systemic)>();
+        var tracks = new Dictionary<string, (string source, string label, Dictionary<string, string> tags, List<SignalSample> samples)>();
+        void Add(string key, string source, string label, Dictionary<string, string> tags, SignalSample sample)
+        {
+            if (!tracks.TryGetValue(key, out var t)) tracks[key] = t = (source, label, tags, []);
+            t.samples.Add(sample);
+        }
+        Dictionary<string, string> Tags(ZoneActivation z) =>
+            new() { ["zone"] = z.Zone, ["layer"] = z.Layer, ["systemic"] = z.Systemic ? "true" : "false" };
+
+        var perSchoolTracks = schools.Count > 1;
         foreach (var frame in frames)
         {
-            foreach (var z in RuleEngine.Evaluate(rules, activeAt(frame), baseline))
+            var each = SchoolEngine.EvaluateEach(schools, activeAt(frame), baselines);
+            foreach (var z in SchoolEngine.Combine(schools, each))
+                Add($"zone:{z.Zone}", CombinedSource, z.Label, Tags(z), new SignalSample(frame, z.Score, z.Raw, z.DominantQuality ?? ""));
+
+            if (!perSchoolTracks) continue;
+            for (var i = 0; i < schools.Count; i++)
             {
-                if (!zoneSamples.TryGetValue(z.Zone, out var list)) zoneSamples[z.Zone] = list = [];
-                list.Add(new SignalSample(frame, z.Score, z.Raw, z.DominantQuality ?? ""));
-                zoneLabels[z.Zone] = (z.Label, z.Systemic);
+                var school = schools[i];
+                foreach (var z in each[i])
+                {
+                    var tags = Tags(z);
+                    tags["school"] = school.Id;
+                    Add($"zone:{school.Id}:{z.Zone}", school.Id, $"{z.Label} · {school.Name}", tags,
+                        new SignalSample(frame, z.Score, z.Raw, z.DominantQuality ?? ""));
+                }
             }
         }
 
-        var zoneTracks = zoneSamples.Select(kv => new SignalTrack(
-                $"zone:{kv.Key}", "zone", "rules", zoneLabels[kv.Key].label,
-                new Dictionary<string, string> { ["zone"] = kv.Key, ["systemic"] = zoneLabels[kv.Key].systemic ? "true" : "false" },
-                kv.Value.Count == 0 ? 0 : kv.Value.Max(s => s.Intensity),
-                kv.Value))
+        var zoneTracks = tracks.Select(kv => new SignalTrack(
+                kv.Key, "zone", kv.Value.source, kv.Value.label, kv.Value.tags,
+                kv.Value.samples.Count == 0 ? 0 : kv.Value.samples.Max(s => s.Intensity),
+                kv.Value.samples))
             .ToList();
 
         return new Timeline(from, to, signalTracks, zoneTracks);

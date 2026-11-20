@@ -19,6 +19,11 @@
     </PackageReference>
   </ItemGroup>
 
+  <!-- The dev SQLite database lives next to the project: its writes must not wake dotnet watch. -->
+  <ItemGroup>
+    <Watch Remove="dendera.db*" />
+  </ItemGroup>
+
   <!-- Rule sets (the "theories") live in src/backend/rules and ship next to the API. -->
   <ItemGroup>
     <None Include="..\rules\*.json" Link="rules\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />

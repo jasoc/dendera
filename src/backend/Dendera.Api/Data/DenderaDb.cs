@@ -15,7 +15,7 @@ public sealed class DenderaDb(DbContextOptions<DenderaDb> options) : DbContext(o
             e.Property(p => p.BirthPlace).HasMaxLength(300);
             e.Property(p => p.CurrentPlace).HasMaxLength(300);
             e.Property(p => p.HouseSystem).HasMaxLength(20);
-            e.Property(p => p.RuleSetId).HasMaxLength(100);
+            e.Property(p => p.Schools).HasMaxLength(500);
         });
 
         b.Entity<JournalDay>(e =>
@@ -49,8 +49,12 @@ public sealed class Profile
     public string? CurrentTimeZone { get; set; }
 
     public string HouseSystem { get; set; } = "Placidus";
-    public string RuleSetId { get; set; } = "melothesia-classic";
+    /// <summary>Active schools (rule set ids), comma-separated. Stored so journal correlations stay reproducible.</summary>
+    public string Schools { get; set; } = "";
     public DateTimeOffset CreatedAt { get; set; }
+
+    public IReadOnlyList<string> SchoolIds =>
+        Schools.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
     public DateTimeOffset BirthUtc => new DateTimeOffset(
         DateTime.SpecifyKind(BirthLocal, DateTimeKind.Unspecified),

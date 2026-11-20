@@ -20,6 +20,9 @@ export ASPNETCORE_URLS="http://localhost:5180"
 echo "==> Starting Dendera.Api on $ASPNETCORE_URLS (dotnet watch: edits to backend code apply live)"
 # Run from the project folder: the default SQLite path (dendera.db) is relative to it.
 cd "$ROOT/src/backend/Dendera.Api"
+# wwwroot (the built SPA, gitignored) may be missing: dotnet watch crashes if a directory it
+# remembers from an earlier build is gone. In dev the UI comes from :4200, so empty is fine.
+mkdir -p wwwroot
 # `dotnet watch` rebuilds and hot-reloads on every edit (Dendera.Core and Dendera.Sources
 # included); an edit hot reload can't apply, a "rude edit" such as a changed signature,
 # restarts the API by itself. --non-interactive: no prompt to answer, this runs under

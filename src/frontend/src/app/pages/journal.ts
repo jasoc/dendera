@@ -1,5 +1,9 @@
 import { Component, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Api } from '../core/api';
 import { ProfileStore } from '../core/profile-store';
 import { JournalDay, METRICS, Metric } from '../core/models';
@@ -8,7 +12,7 @@ import { METRIC_HINT, METRIC_NAME } from '../core/symbols';
 /** The daily diary: 10 seconds a day. This is the data that tests every rule. */
 @Component({
   selector: 'app-journal',
-  imports: [FormsModule],
+  imports: [FormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatTooltipModule],
   template: `
     <div class="journal-grid">
       <section class="panel">
@@ -27,20 +31,22 @@ import { METRIC_HINT, METRIC_NAME } from '../core/symbols';
                   <button type="button" class="dot-btn" [class.on]="entry()[m] === v" (click)="set(m, v)">{{ v }}</button>
                 }
                 @if (entry()[m] != null) {
-                  <button type="button" class="clear" (click)="set(m, null)" title="Non registrato">×</button>
+                  <button type="button" matIconButton class="clear" (click)="set(m, null)" matTooltip="Non registrato">
+                    <span class="material-symbols-rounded">close</span>
+                  </button>
                 }
               </div>
             </div>
           }
         </div>
 
-        <label class="field">
-          <span>Note (cosa è successo, sogni, sensazioni)</span>
-          <textarea rows="3" [ngModel]="entry().notes" (ngModelChange)="patchNotes($event)"></textarea>
-        </label>
+        <mat-form-field appearance="outline">
+          <mat-label>Note (cosa è successo, sogni, sensazioni)</mat-label>
+          <textarea matInput rows="3" [ngModel]="entry().notes" (ngModelChange)="patchNotes($event)"></textarea>
+        </mat-form-field>
 
         <div class="actions">
-          <button class="btn primary" (click)="save()" [disabled]="saving()">Salva</button>
+          <button matButton="filled" (click)="save()" [disabled]="saving()">Salva</button>
           @if (saved()) { <span class="ok">Salvato ✓</span> }
           @if (error()) { <span class="error">{{ error() }}</span> }
         </div>
@@ -61,7 +67,8 @@ import { METRIC_HINT, METRIC_NAME } from '../core/symbols';
                 <tr [class.current]="d.date === date()" (click)="pickDate(d.date)">
                   <td>{{ d.date }}</td>
                   @for (m of metrics; track m) { <td class="num">{{ d[m] ?? '·' }}</td> }
-                  <td><button class="link danger" (click)="remove(d.date, $event)" title="Elimina">×</button></td>
+                  <td><button matIconButton class="danger" (click)="remove(d.date, $event)" matTooltip="Elimina">
+                    <span class="material-symbols-rounded">delete</span></button></td>
                 </tr>
               }
             </tbody>

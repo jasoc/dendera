@@ -5,6 +5,7 @@ using Dendera.Core;
 using Dendera.Core.Astro;
 using Dendera.Core.Journal;
 using Dendera.Core.Readings;
+using Dendera.Core.Rules;
 using Dendera.Core.Signals;
 using Dendera.Sources;
 using Microsoft.EntityFrameworkCore;
@@ -34,8 +35,12 @@ public static class ApiEndpoints
                 ? Results.Ok(new { offsetMinutes = minutes })
                 : Results.NotFound(new { error = $"unknown time zone '{tz}'" }));
 
-        api.MapGet("/rulesets", (RuleSetCatalog catalog) =>
-            Results.Ok(catalog.All.Select(r => new { r.Id, r.Version, r.Name, r.Description, rules = r.Rules.Count })));
+        // What the code implements: every influence (with its last status), every school, the body vocabulary.
+        api.MapGet("/catalog", (RuleSetCatalog catalog, IEnumerable<ISignalProvider> providers, InfluenceStatusBoard board) =>
+            Results.Ok(new CatalogResponse(
+                providers.Select(p => new CatalogInfluence(p.Info, board.Last(p.Source))).ToList(),
+                catalog.All.Select(CatalogSchool.From).ToList(),
+                BodyZones.Nodes.Select(CatalogZone.From).ToList())));
 
         api.MapGet("/metrics", () =>
             Results.Ok(JournalMetrics.All.Select(m => new MetricInfo(m, Lexicon.Name(m)))));
@@ -55,23 +60,32 @@ public static class ApiEndpoints
         profiles.MapGet("/{id:int}", async (int id, DenderaDb db) =>
             await db.Profiles.FindAsync(id) is { } p ? Results.Ok(ProfileDto.From(p)) : Results.NotFound());
 
-        profiles.MapPost("/", async (ProfileInput input, DenderaDb db, TimeProvider clock) =>
+        profiles.MapPost("/", async (ProfileInput input, DenderaDb db, RuleSetCatalog catalog, TimeProvider clock) =>
         {
             var errors = input.Validate().ToList();
             if (errors.Count > 0) return Results.BadRequest(new { errors });
             var p = new Profile { CreatedAt = clock.GetUtcNow() };
-            input.ApplyTo(p);
+            input.ApplyTo(p, catalog);
             db.Profiles.Add(p);
             await db.SaveChangesAsync();
             return Results.Created($"/api/profiles/{p.Id}", ProfileDto.From(p));
         });
 
-        profiles.MapPut("/{id:int}", async (int id, ProfileInput input, DenderaDb db) =>
+        profiles.MapPut("/{id:int}", async (int id, ProfileInput input, DenderaDb db, RuleSetCatalog catalog) =>
         {
             var errors = input.Validate().ToList();
             if (errors.Count > 0) return Results.BadRequest(new { errors });
             if (await db.Profiles.FindAsync(id) is not { } p) return Results.NotFound();
-            input.ApplyTo(p);
+            input.ApplyTo(p, catalog);
+            await db.SaveChangesAsync();
+            return Results.Ok(ProfileDto.From(p));
+        });
+
+        // The fast toggle: only the active schools.
+        profiles.MapPut("/{id:int}/schools", async (int id, SchoolsInput input, DenderaDb db, RuleSetCatalog catalog) =>
+        {
+            if (await db.Profiles.FindAsync(id) is not { } p) return Results.NotFound();
+            p.Schools = string.Join(',', catalog.Normalize(input.Schools));
             await db.SaveChangesAsync();
             return Results.Ok(ProfileDto.From(p));
         });
@@ -89,22 +103,22 @@ public static class ApiEndpoints
 
         // ---------- the pipeline ----------
         profiles.MapGet("/{id:int}/reading", async (
-            int id, DateTimeOffset? at, string? ruleset,
+            int id, DateTimeOffset? at, string? schools,
             DenderaDb db, ProfileContextFactory factory, SignalHub hub, IEphemeris eph, TimeProvider clock,
             CancellationToken ct) =>
         {
             if (await db.Profiles.FindAsync([id], ct) is not { } p) return Results.NotFound();
-            var ctx = factory.Create(p, ruleset);
+            var ctx = factory.Create(p, ProfileContextFactory.ParseOverride(schools));
             var when = at ?? clock.GetUtcNow();
 
-            var bundle = await hub.CollectAsync([when], ctx.Sky, ct);
-            var active = bundle.ActiveAt(when, bundle.Sky.ToLookup(s => s.At));
-            var reading = ReadingEngine.Compose(when, ctx.Rules, eph.Positions(when), ctx.Natal, active);
+            var bundle = await hub.CollectAsync([when], p.CurrentLatitude, p.CurrentLongitude, ctx.Natal, ct);
+            var active = bundle.ActiveAt()(when);
+            var reading = ReadingEngine.Compose(when, ctx.Schools, ctx.Baselines, eph.Positions(when), ctx.Natal, active);
             return Results.Ok(new ReadingResponse(reading, bundle.Sources));
         });
 
         profiles.MapGet("/{id:int}/timeline", async (
-            int id, DateTimeOffset? from, DateTimeOffset? to, int? stepHours, string? ruleset,
+            int id, DateTimeOffset? from, DateTimeOffset? to, int? stepHours, string? schools,
             DenderaDb db, ProfileContextFactory factory, SignalHub hub, TimeProvider clock, CancellationToken ct) =>
         {
             if (await db.Profiles.FindAsync([id], ct) is not { } p) return Results.NotFound();
@@ -116,7 +130,7 @@ public static class ApiEndpoints
                 return Results.BadRequest(new { error = $"max {MaxTimelineDays} days per request" });
 
             var step = Math.Clamp(stepHours ?? 6, 1, 24);
-            var ctx = factory.Create(p, ruleset);
+            var ctx = factory.Create(p, ProfileContextFactory.ParseOverride(schools));
             var (timeline, sources) = await BuildTimeline(ctx, Align(start, step), end, step, hub, ct);
             return Results.Ok(new TimelineResponse(timeline, sources, step));
         });
@@ -154,9 +168,9 @@ public static class ApiEndpoints
             return deleted == 0 ? Results.NotFound() : Results.NoContent();
         });
 
-        // ---------- correlations: the Babylonian diary ----------
+        // ---------- correlations: journal metrics against signal and zone tracks ----------
         profiles.MapGet("/{id:int}/correlations", async (
-            int id, string? ruleset, DenderaDb db, ProfileContextFactory factory, SignalHub hub, CancellationToken ct) =>
+            int id, string? schools, DenderaDb db, ProfileContextFactory factory, SignalHub hub, CancellationToken ct) =>
         {
             if (await db.Profiles.FindAsync([id], ct) is not { } p) return Results.NotFound();
             var days = await db.Journal.Where(j => j.ProfileId == id).OrderBy(j => j.Date).ToListAsync(ct);
@@ -171,7 +185,7 @@ public static class ApiEndpoints
             var last = days[^1].Date;
             if (last.DayNumber - first.DayNumber > MaxTimelineDays) first = last.AddDays(-MaxTimelineDays);
 
-            var ctx = factory.Create(p, ruleset);
+            var ctx = factory.Create(p, ProfileContextFactory.ParseOverride(schools));
             var offset = ctx.CurrentOffset(DateTimeOffset.UtcNow);
             var start = new DateTimeOffset(first.ToDateTime(TimeOnly.MinValue), offset);
             var end = new DateTimeOffset(last.ToDateTime(new TimeOnly(23, 0)), offset);
@@ -190,10 +204,10 @@ public static class ApiEndpoints
         var frames = new List<DateTimeOffset>();
         for (var t = start; t <= end; t = t.AddHours(stepHours)) frames.Add(t);
 
-        var bundle = await hub.CollectAsync(frames, ctx.Sky, ct);
-        var skyByTime = bundle.Sky.ToLookup(s => s.At);
-        var timeline = ReadingEngine.BuildTimeline(start, end, ctx.Rules, ctx.Natal,
-            bundle.All.ToList(), frames, at => bundle.ActiveAt(at, skyByTime));
+        var p = ctx.Profile;
+        var bundle = await hub.CollectAsync(frames, p.CurrentLatitude, p.CurrentLongitude, ctx.Natal, ct);
+        var timeline = ReadingEngine.BuildTimeline(start, end, ctx.Schools, ctx.Baselines,
+            bundle.All, frames, bundle.ActiveAt());
         return (timeline, bundle.Sources);
     }
 
