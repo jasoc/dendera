@@ -129,6 +129,7 @@ public static class ReadingEngine
         SignalKinds.RetrogradeCount => 0,
         SignalKinds.Retrograde => 1,
         SignalKinds.Station => 2,
+        SignalKinds.SlowMotion => 2,
         SignalKinds.TransitAspect => 3,
         SignalKinds.SkyAspect => 4,
         SignalKinds.Eclipse => 5,

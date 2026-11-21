@@ -17,7 +17,8 @@ Three words, used the same way in code, API, UI and docs:
 | Influence (`Source`) | Kind | Key(s) | Intensity 0..1 | Main tags |
 |---|---|---|---|---|
 | `ephemeris` | `placement` | `placement:{body}` | always 1 | body, sign, house |
-| | `retrograde` | `retrograde:{body}` | 0.5, rising to 1 near the station | body, sign |
+| | `retrograde` | `retrograde:{body}` | 1 (Lilly, *Christian Astrology* p. 115: retrograde −5) | body, sign |
+| | `slow-motion` | `slow:{body}` | 0.4 when direct but slower than its mean (Lilly: slow −2, ratio 2/5) | body, sign |
 | | `station` | `station:{body}` | 1 − \|speed\| / (10% of mean speed) | body, sign, motion |
 | | `retrograde-count` | `retrograde-count` | retrograde planets / 8 | count |
 | | `sky-aspect` | `sky:{a}:{aspect}:{b}` | cosine of orb fraction | bodyA, bodyB, aspect, quality, applying |
@@ -28,11 +29,11 @@ Three words, used the same way in code, API, UI and docs:
 | | `photoperiod-change` | `photoperiod-change` | \|Δ minutes/day\| / 4 | direction |
 | | `day-phase` | `day-phase` | always 1 | phase (day/night/dawn/dusk), light (day/night/twilight: Sun within ±6°) |
 | | `eclipse` | `eclipse:solar`, `eclipse:lunar` | 1 at the peak, 0 at ±15 days | type, kind |
-| `gfz` | `geomagnetic` | `kp` | (Kp − 2) / 6 | level, status |
-| `open-meteo` | `pressure` | `pressure` | (1015 − hPa) / 25 | — |
-| | `pressure-change` | `pressure-change` | \|Δ24h\| / 12 hPa | direction (drop/rise) |
+| `gfz` | `geomagnetic` | `kp` | (Kp − 4) / 5: 0.2 at Kp 5 = G1 (NOAA scale), 1 at G5 | level, status |
+| `open-meteo` | `pressure` | `pressure` | (1013 − sea-level hPa) / 10 (Okuma 2015: 6–10 hPa below 1013) | — |
+| | `pressure-change` | `pressure-change` | \|Δ24h\| / 10 hPa (Kimoto 2011: drops > 5 hPa) | direction (drop/rise) |
 | | `temperature` | `temperature` | cold: (10 − °C) / 15, heat: (°C − 26) / 12 | level (cold/mild/heat) |
-| | `temperature-swing` | `temperature-swing` | \|Δ24h\| / 10 °C | direction |
+| | `temperature-swing` | `temperature-swing` | \|mean of last 24 h − mean of the 24 h before\| / 10 °C (Guo 2011: > 3 °C) | direction |
 | | `humidity` | `humidity` | (RH − 60) / 40 | level (low/normal/high) |
 | | `dryness` | `dryness` | (45 − RH) / 30, only below 45% | level |
 | | `muggy` | `muggy` | grows with heat above 26 °C and humidity above 55% | level |
@@ -45,7 +46,11 @@ Three words, used the same way in code, API, UI and docs:
 Notes:
 
 - **Aspects** are facts of the ephemeris influence, not of a school: `AspectCatalog.Default`
-  in `Astro/Aspects.cs` (8 aspects, transit orb × 0.4, sky orb × 0.5 and major aspects only).
+  in `Astro/Aspects.cs` (5 Ptolemaic + 3 minor). Orbs belong to the **planets** (al-Bīrūnī, *Book of
+  Instruction* §§ 436–437; Lilly, *Christian Astrology* p. 107: Sun 15°, Moon 12°, Jupiter and Saturn 9°,
+  Mars 8°, Venus and Mercury 7°, others 5°). Sky aspects (major only): sum of the two moieties (half orbs);
+  transits: the transiting planet's moiety only; minor aspects: half of that. Sources of every number:
+  `docs/plans/calibration.md`, step 1.
   A school that wants only Ptolemaic aspects filters on the `aspect` tag in its rules.
 - **Frame-aligned influences** (ephemeris, tcm-calendar, human-design) sample exactly on the
   query frames and have `SampleValidity = 0`, so a vanished aspect does not linger into the
@@ -91,7 +96,7 @@ timeline and in the correlation engine.
   "baseline": "melothesia",                   // natal emphasis: melothesia | human-design | none
   "correspondences": { "virgo": ["gut", "solar-plexus"], "mercury": ["nervous-system"] },
   "natalAmplification": 0.5,
-  "saturation": 2.5,
+  "saturation": 2.5,                          // fallback scale only (no up-to-date quantile table) and second pass
   "rules": [
     {
       "id": "transit-to-natal",
@@ -134,7 +139,8 @@ Schools may also carry `"tables"` (title, columns, rows): reference data of the 
 the Scuole page (e.g. the five-element correspondences).
 
 **Relations between nodes** are rules of kind `node`, evaluated in a second pass on the nodes
-the same school activated (intensity = node score, `quality` tag = its dominant quality):
+the same school activated (intensity = the node's internal score `1 − e^(−raw/saturation)`, not its
+rarity, `quality` tag = its dominant quality):
 
 ```jsonc
 { "id": "emotion-anger",
@@ -148,6 +154,19 @@ only read that school's own activations, so switching a school off removes its r
 
 Known qualities (colours in the UI): tension, flow, fusion, inward, agitation, depletion,
 pressure, sensitivity, neutral. Any other string works but is drawn grey.
+
+## What a score means: rarity
+
+A school's score on a node is its **rarity**: the share of moments of a reference sky in which
+that school puts a strictly lower raw sum on that node. 50% is an ordinary moment, 95% a rare
+one; a node nothing touches is 0, not "its usual". Per-quality scores split the rarity by each
+quality's share of the raw sum. The reference distributions are quantile tables
+(`rules/<school>.quantiles.json`) written by the calibration ritual
+(`dotnet run --project Dendera.Api -- calibrate`, see CLAUDE.md and `docs/calibration-report.md`).
+Schools reading the local weather have one table per climate zone; the person's place picks the
+nearest reference place. A school whose table is missing or stale uses `1 − e^(−raw/saturation)`
+and shows "da ricalibrare". Any change to a rule file's rules, weights or correspondences needs
+the ritual again (a unit test enforces it).
 
 ## Several schools at once
 

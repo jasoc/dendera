@@ -54,15 +54,20 @@ public sealed class GfzKpProvider(HttpClient http, IMemoryCache cache) : ISignal
             if (at < query.From - SampleValidity || at > query.To) continue;
             var kp = data.Kp[i];
             var status = data.Status is not null && i < data.Status.Count ? data.Status[i] : "";
-            signals.Add(new Signal(
-                "kp", SignalKinds.Geomagnetic, Source, at,
-                Math.Clamp((kp - 2) / 6.0, 0, 1), kp, "Kp",
-                new Dictionary<string, string> { ["level"] = Level(kp), ["status"] = status },
-                "Attività geomagnetica (Kp)",
-                $"Kp {kp:0.0} – {LevelLabel(kp)}"));
+            signals.Add(ToSignal(at, kp, status));
         }
         return signals;
     }
+
+    /// <summary>One Kp sample as a signal.</summary>
+    public static Signal ToSignal(DateTimeOffset at, double kp, string status) =>
+        new(
+            "kp", SignalKinds.Geomagnetic, Influence.Id, at,
+            // NOAA SWPC Space Weather Scales: Kp 5 = G1 storm … Kp 9 = G5. Intensity 0 up to Kp 4, 0.2 at G1, 1 at G5.
+            Math.Clamp((kp - 4) / 5.0, 0, 1), kp, "Kp",
+            new Dictionary<string, string> { ["level"] = Level(kp), ["status"] = status },
+            "Attività geomagnetica (Kp)",
+            $"Kp {kp:0.0} – {LevelLabel(kp)}");
 
     private static string Level(double kp) => kp switch
     {

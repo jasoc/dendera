@@ -1,0 +1,12 @@
+{
+  "files": {
+    "kp.csv.gz": "d0fefe6e7d0a0c7c2b65bbdb3349070b463ae7c93de8aebf2c3ae2fdb08a0554",
+    "weather-af-singapore.csv.gz": "48701ab09addc5f96ee70f6cf5521cb8ae430b9225e6a0a91404122459c38041",
+    "weather-bsk-madrid.csv.gz": "cab7e2ab69fcad2db7d9651cc07989848b08d8c9028b2c63c43334b9d20a0e5b",
+    "weather-bwh-cairo.csv.gz": "5aebf6202626cd66e98c11e0b857ffcee404d019c38e7bca455d02a8d1f38896",
+    "weather-cfa-milano.csv.gz": "60a706c7cdf84b517efeabfc2eefd1b6c63a8176dea0f4067b4aee1b7e3907ba",
+    "weather-cfb-london.csv.gz": "13ac7541dd786e29982360d0fc259987fb6b563aa3b4eb29693dcd62f192ccd1",
+    "weather-csa-palermo.csv.gz": "748592494e0661a9ede8f833e6b5e3d73743e9825b17351dd792560df4436b89",
+    "weather-dfb-warszawa.csv.gz": "3c5187d896b6eb81d7c3e4c6af1214c258b477939ab924d3753aab9bea333731"
+  }
+}

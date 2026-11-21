@@ -92,7 +92,7 @@ public static class Lexicon
     /// <summary>Signal kinds (separate table: some kind ids collide with other ids, e.g. "pressure").</summary>
     private static readonly Dictionary<string, string> Kinds = new()
     {
-        ["placement"] = "Posizione nei segni", ["retrograde"] = "Moto retrogrado", ["station"] = "Stazione",
+        ["placement"] = "Posizione nei segni", ["retrograde"] = "Moto retrogrado", ["station"] = "Stazione", ["slow-motion"] = "Moto lento",
         ["retrograde-count"] = "Numero di retrogradi", ["sky-aspect"] = "Aspetto nel cielo",
         ["transit-aspect"] = "Transito sul tema natale", ["lunar-phase"] = "Fase lunare",
         ["lunar-distance"] = "Distanza della Luna", ["photoperiod"] = "Ore di luce",

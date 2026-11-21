@@ -30,9 +30,9 @@ public sealed class OpenMeteoWeatherProvider(IHttpClientFactory httpFactory, IMe
         "CC BY 4.0",
         Reliabilities.Primary,
         [
-            new(SignalKinds.Pressure, "Pressione atmosferica al suolo; più intensa quando è bassa"),
+            new(SignalKinds.Pressure, "Pressione atmosferica ridotta al livello del mare; più intensa sotto i 1013 hPa"),
             new(SignalKinds.PressureChange, "Variazione di pressione nelle ultime 24 ore (calo o salita)"),
-            new(SignalKinds.TemperatureSwing, "Sbalzo di temperatura nelle ultime 24 ore"),
+            new(SignalKinds.TemperatureSwing, "Differenza tra la temperatura media delle ultime 24 ore e quella delle 24 ore prima"),
             new(SignalKinds.Humidity, "Umidità relativa dell'aria; più intensa quando è alta"),
             new(SignalKinds.Dryness, "Aria secca: più intensa quando l'umidità relativa scende sotto il 45%"),
             new(SignalKinds.Muggy, "Afa: caldo umido, sopra 26°C con umidità oltre il 55%"),
@@ -47,7 +47,7 @@ public sealed class OpenMeteoWeatherProvider(IHttpClientFactory httpFactory, IMe
     public async Task<IReadOnlyList<Signal>> GetAsync(SignalQuery query, CancellationToken cancellationToken)
     {
         var today = DateOnly.FromDateTime(time.GetUtcNow().UtcDateTime);
-        var from = DateOnly.FromDateTime(query.From.UtcDateTime).AddDays(-1); // one extra day for 24h deltas
+        var from = DateOnly.FromDateTime(query.From.UtcDateTime).AddDays(-2); // two extra days: 24h deltas and day-over-day means
         var to = DateOnly.FromDateTime(query.To.UtcDateTime);
         if (to > today.AddDays(14)) to = today.AddDays(14);
         if (from > to) return [];
@@ -73,7 +73,7 @@ public sealed class OpenMeteoWeatherProvider(IHttpClientFactory httpFactory, IMe
     {
         var lat = Math.Round(q.Latitude, 2).ToString(CultureInfo.InvariantCulture);
         var lon = Math.Round(q.Longitude, 2).ToString(CultureInfo.InvariantCulture);
-        var url = $"{path}?latitude={lat}&longitude={lon}&hourly=surface_pressure,temperature_2m,relative_humidity_2m,wind_speed_10m,wind_gusts_10m" +
+        var url = $"{path}?latitude={lat}&longitude={lon}&hourly=pressure_msl,temperature_2m,relative_humidity_2m,wind_speed_10m,wind_gusts_10m" +
                   $"&start_date={from:yyyy-MM-dd}&end_date={to:yyyy-MM-dd}&timezone=UTC";
 
         var data = await cache.GetOrCreateAsync($"open-meteo:{url}", async entry =>
@@ -87,7 +87,7 @@ public sealed class OpenMeteoWeatherProvider(IHttpClientFactory httpFactory, IMe
         for (var i = 0; i < h.Time.Count; i++)
         {
             var at = new DateTimeOffset(DateTime.Parse(h.Time[i], CultureInfo.InvariantCulture), TimeSpan.Zero);
-            into[at] = new Hour(At(h.SurfacePressure, i), At(h.Temperature, i), At(h.Humidity, i),
+            into[at] = new Hour(At(h.SeaLevelPressure, i), At(h.Temperature, i), At(h.Humidity, i),
                 At(h.WindSpeed, i), At(h.WindGusts, i));
         }
     }
@@ -103,6 +103,23 @@ public sealed class OpenMeteoWeatherProvider(IHttpClientFactory httpFactory, IMe
         foreach (var (at, now) in hourly)
         {
             if (at.Hour % SampleEveryHours != 0 || at < from.AddHours(-SampleEveryHours) || at > to) continue;
+            AddSignalsAt(signals, source, hourly, at, now);
+        }
+        return signals;
+    }
+
+    /// <summary>The weather signals of one hour (the hourly series must hold the 48 hours before it).</summary>
+    public static IReadOnlyList<Signal> SignalsAt(string source, IReadOnlyDictionary<DateTimeOffset, Hour> hourly, DateTimeOffset at)
+    {
+        var signals = new List<Signal>(10);
+        if (hourly.TryGetValue(at, out var now)) AddSignalsAt(signals, source, hourly, at, now);
+        return signals;
+    }
+
+    private static void AddSignalsAt(
+        List<Signal> signals, string source, IReadOnlyDictionary<DateTimeOffset, Hour> hourly, DateTimeOffset at, Hour now)
+    {
+        {
             var dayBefore = hourly.GetValueOrDefault(at.AddHours(-24)) ?? Hour.Empty;
             Signal Make(string key, string kind, double intensity, double value, string unit,
                 Dictionary<string, string> tags, string label, string detail) =>
@@ -110,13 +127,17 @@ public sealed class OpenMeteoWeatherProvider(IHttpClientFactory httpFactory, IMe
 
             if (now.Pressure is { } p)
             {
-                signals.Add(Make("pressure", SignalKinds.Pressure, Math.Clamp((1015 - p) / 25, 0, 1), p, "hPa",
+                // Sea-level pressure below the 1013 hPa standard: Okuma et al., SpringerPlus 4 (2015),
+                // migraine most frequent 6–10 hPa below 1013 (intensity 0.6 at 1007, 1 at 1003).
+                signals.Add(Make("pressure", SignalKinds.Pressure, Math.Clamp((1013 - p) / 10, 0, 1), p, "hPa",
                     new(), "Pressione atmosferica", $"{p:0} hPa"));
 
                 if (dayBefore.Pressure is { } p0)
                 {
                     var dp = p - p0;
-                    signals.Add(Make("pressure-change", SignalKinds.PressureChange, Math.Clamp(Math.Abs(dp) / 12, 0, 1),
+                    // Kimoto et al., Intern. Med. 50 (2011): migraine more frequent when pressure is > 5 hPa lower
+                    // than the day before (intensity 0.5 at 5 hPa, 1 at 10 hPa).
+                    signals.Add(Make("pressure-change", SignalKinds.PressureChange, Math.Clamp(Math.Abs(dp) / 10, 0, 1),
                         Math.Round(dp, 1), "hPa/24h",
                         new() { ["direction"] = dp < 0 ? "drop" : "rise" },
                         "Variazione di pressione", $"{dp:+0.0;-0.0} hPa in 24h"));
@@ -136,12 +157,13 @@ public sealed class OpenMeteoWeatherProvider(IHttpClientFactory httpFactory, IMe
                     new() { ["level"] = level }, "Temperatura", $"{temp:0.0}°C ({Lexicon.Name(level)})"));
             }
 
-            if (now.Temperature is { } t && dayBefore.Temperature is { } t0)
+            // Guo et al., PLoS ONE 6 (2011): a change of > 3 °C in mean temperature between neighbouring days raises
+            // mortality. Mean of the last 24 h against the 24 h before (intensity 0.3 at 3 °C, 1 at 10 °C).
+            if (now.Temperature is { } t && DailyMeanChange(hourly, at) is { } dt)
             {
-                var dt = t - t0;
                 signals.Add(Make("temperature-swing", SignalKinds.TemperatureSwing, Math.Clamp(Math.Abs(dt) / 10, 0, 1),
                     Math.Round(dt, 1), "°C/24h", new() { ["direction"] = dt < 0 ? "colder" : "warmer" },
-                    "Sbalzo termico", $"{t:0.0}°C ({dt:+0.0;-0.0}°C in 24h)"));
+                    "Sbalzo termico", $"{t:0.0}°C (media {dt:+0.0;-0.0}°C sul giorno prima)"));
             }
 
             if (now.Humidity is { } rh)
@@ -171,13 +193,26 @@ public sealed class OpenMeteoWeatherProvider(IHttpClientFactory httpFactory, IMe
                     new() { ["level"] = level }, "Vento", $"{wind:0} km/h, raffiche {gust:0} km/h"));
             }
         }
-        return signals;
     }
 
     /// <summary>One hour of weather (km/h for wind, °C, hPa, %).</summary>
     public sealed record Hour(double? Pressure, double? Temperature, double? Humidity, double? WindSpeed, double? WindGusts)
     {
         public static readonly Hour Empty = new(null, null, null, null, null);
+    }
+
+    /// <summary>Mean temperature of the 24 hours ending at <paramref name="at"/> minus that of the 24 hours before.</summary>
+    private static double? DailyMeanChange(IReadOnlyDictionary<DateTimeOffset, Hour> hourly, DateTimeOffset at)
+    {
+        double? Mean(DateTimeOffset end)
+        {
+            double sum = 0;
+            var n = 0;
+            for (var h = 0; h < 24; h++)
+                if (hourly.GetValueOrDefault(end.AddHours(-h))?.Temperature is { } v) { sum += v; n++; }
+            return n >= 18 ? sum / n : null;
+        }
+        return Mean(at) is { } now && Mean(at.AddHours(-24)) is { } before ? now - before : null;
     }
 
     private static double? At(List<double?>? list, int i) => list is not null && i < list.Count ? list[i] : null;
@@ -192,7 +227,7 @@ public sealed class OpenMeteoWeatherProvider(IHttpClientFactory httpFactory, IMe
     private sealed class HourlyData
     {
         [JsonPropertyName("time")] public List<string>? Time { get; set; }
-        [JsonPropertyName("surface_pressure")] public List<double?>? SurfacePressure { get; set; }
+        [JsonPropertyName("pressure_msl")] public List<double?>? SeaLevelPressure { get; set; }
         [JsonPropertyName("temperature_2m")] public List<double?>? Temperature { get; set; }
         [JsonPropertyName("relative_humidity_2m")] public List<double?>? Humidity { get; set; }
         [JsonPropertyName("wind_speed_10m")] public List<double?>? WindSpeed { get; set; }

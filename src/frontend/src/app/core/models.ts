@@ -201,8 +201,11 @@ export interface CatalogSchool {
   requires: string[];
   baseline: string;
   baselineText: string;
+  /** Fallback scale, used only while the school has no up-to-date quantile table. */
   saturation: number;
   natalAmplification: number;
+  /** Quantile table written by the calibration ritual: scores are rarities only when 'Calibrated'. */
+  calibration: 'Calibrated' | 'Stale' | 'Missing';
   /** Reference tables of the tradition (five elements, chakras…). */
   tables: { title: string; columns: string[]; rows: string[][] }[];
   rules: CatalogRule[];

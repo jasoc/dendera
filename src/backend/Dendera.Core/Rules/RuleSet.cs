@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Dendera.Core.Calibration;
 using Dendera.Core.Signals;
 
 namespace Dendera.Core.Rules;
@@ -45,6 +46,16 @@ public sealed record RuleSet
     public double Saturation { get; init; } = 2.5;
 
     public List<Rule> Rules { get; init; } = new();
+
+    /// <summary>
+    /// Reference distribution chosen for this evaluation (global, or the climate zone of the person's place): node
+    /// scores become rarities. Null → the fallback scale 1 − e^(−raw/<see cref="Saturation"/>). Set by the API from
+    /// rules/&lt;id&gt;.quantiles.json, never read from the rule file.
+    /// </summary>
+    [JsonIgnore] public NodeQuantiles? Rarity { get; init; }
+
+    /// <summary>State of the school's quantile table (set by the API catalog).</summary>
+    [JsonIgnore] public CalibrationState Calibration { get; init; } = CalibrationState.Missing;
 
     private IReadOnlySet<string>? _covers;
 

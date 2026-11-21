@@ -100,7 +100,14 @@ public sealed class TcmCalendarProvider(IEphemeris ephemeris) : ISignalProvider
     public Task<IReadOnlyList<Signal>> GetAsync(SignalQuery query, CancellationToken cancellationToken)
     {
         var signals = new List<Signal>();
-        foreach (var at in query.Frames())
+        foreach (var at in query.Frames()) signals.AddRange(At(at, query.Longitude));
+        return Task.FromResult<IReadOnlyList<Signal>>(signals);
+    }
+
+    /// <summary>Solar term and organ clock at one instant and longitude.</summary>
+    public IReadOnlyList<Signal> At(DateTimeOffset at, double longitude)
+    {
+        var signals = new List<Signal>(2);
         {
             var sun = ephemeris.Position(Bodies.Sun, at).Longitude;
             var season = TcmCalendar.SeasonOf(sun);
@@ -110,15 +117,15 @@ public sealed class TcmCalendarProvider(IEphemeris ephemeris) : ISignalProvider
                 SeasonLabel(season.Element),
                 $"{Lexicon.Name(season.Term)}, {Lexicon.Name(season.SeasonId)}, Sole a {sun:0.0}°"));
 
-            var organ = TcmCalendar.OrganAt(at, query.Longitude);
-            var hours = TcmCalendar.LocalSolarHours(at, query.Longitude);
+            var organ = TcmCalendar.OrganAt(at, longitude);
+            var hours = TcmCalendar.LocalSolarHours(at, longitude);
             signals.Add(new Signal(
                 $"organ-clock:{organ}", SignalKinds.OrganClock, Id, at, 1.0, Math.Round(hours, 2), "h solari",
                 new Dictionary<string, string> { ["organ"] = organ, ["element"] = TcmCalendar.ElementOfOrgan[organ] },
                 $"Orologio degli organi: {Lexicon.Name(organ)}",
                 $"ora solare {(int)hours:00}:{(int)(hours % 1 * 60):00}"));
         }
-        return Task.FromResult<IReadOnlyList<Signal>>(signals);
+        return signals;
     }
 
     private static string SeasonLabel(string element) => element switch

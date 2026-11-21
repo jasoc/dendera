@@ -103,12 +103,38 @@ public class AstroTests
     [Fact]
     public void Aspect_finder_detects_square_and_applying()
     {
-        var specs = new[] { new AspectSpec("square", 90, 7, "tension") };
-        var hit = AspectFinder.Find(88, 1, 0, 0, specs, 1);
+        var specs = new[] { new AspectSpec("square", 90, "tension") };
+        var hit = AspectFinder.Find(88, 1, 0, 0, specs, 7);
         Assert.NotNull(hit);
         Assert.Equal("square", hit!.Aspect.Id);
         Assert.True(hit.Applying);
         Assert.Equal(2, hit.Deviation, 6);
-        Assert.Null(AspectFinder.Find(70, 1, 0, 0, specs, 1));
+        Assert.Null(AspectFinder.Find(70, 1, 0, 0, specs, 7));
+    }
+
+    [Fact]
+    public void Orbs_are_per_planet_moieties_after_al_biruni()
+    {
+        Assert.Equal(13.5, AspectCatalog.SkyOrb(Bodies.Sun, Bodies.Moon), 6);
+        Assert.Equal(7, AspectCatalog.SkyOrb(Bodies.Mercury, Bodies.Venus), 6);
+        Assert.Equal(4.5, AspectCatalog.TransitOrb(Bodies.Saturn), 6);
+        Assert.Equal(2.5, AspectCatalog.TransitOrb(Bodies.Pluto), 6);
+
+        var specs = AspectCatalog.Default;
+        // Saturn 4° from an exact square to a natal point: inside its 4½° moiety, outside the old 7° × 0.4.
+        Assert.Equal("square", AspectFinder.Find(94, 0.03, 0, 0, specs, AspectCatalog.TransitOrb(Bodies.Saturn))!.Aspect.Id);
+        // Minor aspects get half the orb: semisquare 3° off is outside Saturn's 2¼°.
+        Assert.Null(AspectFinder.Find(48, 0.03, 0, 0, specs.Where(s => !s.Major).ToList(), AspectCatalog.TransitOrb(Bodies.Saturn)));
+    }
+
+    [Fact]
+    public void Retrograde_and_slow_motion_follow_lillys_ratio()
+    {
+        var gen = new SkySignalGenerator(Eph);
+        var signals = gen.At(Utc(2026, 11, 20, 12, 0), new SkyContext(45, 9, null));
+        Assert.All(signals.Where(s => s.Kind == SignalKinds.Retrograde), s => Assert.Equal(1.0, s.Intensity));
+        Assert.All(signals.Where(s => s.Kind == SignalKinds.SlowMotion), s => Assert.Equal(0.4, s.Intensity));
+        var moving = signals.Where(s => s.Kind is SignalKinds.Retrograde or SignalKinds.SlowMotion).Select(s => s.Tag("body")).ToList();
+        Assert.Equal(moving.Count, moving.Distinct().Count());
     }
 }

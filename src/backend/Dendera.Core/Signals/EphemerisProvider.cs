@@ -23,7 +23,8 @@ public sealed class EphemerisProvider(IEphemeris ephemeris) : ISignalProvider
         Reliabilities.Primary,
         [
             new(SignalKinds.Placement, "Segno zodiacale in cui si trova ogni corpo celeste"),
-            new(SignalKinds.Retrograde, "Pianeta in moto apparente all'indietro visto dalla Terra; più forte vicino alle stazioni"),
+            new(SignalKinds.Retrograde, "Pianeta in moto apparente all'indietro visto dalla Terra (debilità −5 nella tavola di Lilly)"),
+            new(SignalKinds.SlowMotion, "Pianeta diretto ma più lento del suo moto medio (debilità −2 nella tavola di Lilly)"),
             new(SignalKinds.Station, "Pianeta quasi fermo nel cielo, al punto di inversione del moto"),
             new(SignalKinds.RetrogradeCount, "Quanti pianeti sono retrogradi nello stesso momento"),
             new(SignalKinds.SkyAspect, "Angolo significativo tra due corpi nel cielo attuale (aspetti maggiori)"),

@@ -38,7 +38,7 @@ public class PipelineTests
     [Fact]
     public void Every_school_file_validates_against_the_registered_influences()
     {
-        var files = Directory.GetFiles(RulesDir(), "*.json");
+        var files = Directory.GetFiles(RulesDir(), "*.json").Where(f => !f.EndsWith(".quantiles.json")).ToArray();
         Assert.NotEmpty(files);
         foreach (var file in files)
         {

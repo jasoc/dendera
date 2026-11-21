@@ -19,7 +19,8 @@ public sealed class ProfileContextFactory(IEphemeris ephemeris, RuleSetCatalog c
         var system = Enum.TryParse<HouseSystem>(profile.HouseSystem, true, out var hs) ? hs : HouseSystem.Placidus;
         var natal = ChartCalculator.Compute(ephemeris,
             new BirthData(profile.BirthUtc, profile.BirthLatitude, profile.BirthLongitude), system);
-        var active = catalog.Resolve(schools ?? profile.SchoolIds);
+        // Each school with the reference table of the place where the person is now (climate zone for weather schools).
+        var active = catalog.ForPlace(catalog.Resolve(schools ?? profile.SchoolIds), profile.CurrentLatitude, profile.CurrentLongitude);
         var baselines = NatalBaselines.For(active, natal,
             () => HumanDesign.Compute(ephemeris, natal.Birth.BirthUtc).DefinedCenters);
         return new ProfileContext(profile, natal, active, baselines);

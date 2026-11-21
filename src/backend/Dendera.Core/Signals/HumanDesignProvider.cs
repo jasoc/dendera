@@ -155,7 +155,14 @@ public sealed class HumanDesignProvider(IEphemeris ephemeris) : ISignalProvider
     {
         var natal = query.Natal is null ? null : HumanDesign.Compute(ephemeris, query.Natal.Birth.BirthUtc);
         var signals = new List<Signal>();
-        foreach (var at in query.Frames())
+        foreach (var at in query.Frames()) signals.AddRange(At(at, natal));
+        return Task.FromResult<IReadOnlyList<Signal>>(signals);
+    }
+
+    /// <summary>Gate signals at one instant against a natal design computed once (null → no natal tags).</summary>
+    public IReadOnlyList<Signal> At(DateTimeOffset at, HumanDesign.Chart? natal)
+    {
+        var signals = new List<Signal>();
         foreach (var (body, lon) in HumanDesign.Points(ephemeris, at))
         {
             var (gate, line) = HumanDesign.GateAt(lon);
@@ -182,6 +189,6 @@ public sealed class HumanDesignProvider(IEphemeris ephemeris) : ISignalProvider
                 $"hd-gate:{body}", SignalKinds.HdGate, Id, at, 1.0, gate + (line - 1) / 10.0, "porta.linea", tags,
                 $"{Lexicon.Name(body)} nel mandala (Human Design)", detail));
         }
-        return Task.FromResult<IReadOnlyList<Signal>>(signals);
+        return signals;
     }
 }

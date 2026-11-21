@@ -82,6 +82,7 @@ export const KIND_GROUP: Record<string, string> = {
   'retrograde-count': 'Cielo',
   retrograde: 'Cielo',
   station: 'Cielo',
+  'slow-motion': 'Cielo',
   'transit-aspect': 'Transiti sul tema natale',
   'sky-aspect': 'Aspetti nel cielo',
   eclipse: 'Cielo',

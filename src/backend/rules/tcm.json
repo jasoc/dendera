@@ -5,7 +5,7 @@
   // Rules are hypotheses: the journal + correlation engine tests them. Nodes: Dendera.Core/Rules/BodyZones.cs.
 
   "id": "tcm",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "name": "Medicina tradizionale cinese",
   "icon": "school-tcm",
   "tradition": "Medicina classica cinese: zang-fu e meridiani, cinque elementi, sette emozioni, cinque Shen, sei eccessi",
@@ -268,6 +268,10 @@
   },
   "natalAmplification": 0,
   "saturation": 2.5,
+  // Weights: the Neijing gives an order, not numbers. Suwen 22 (藏氣法時論) follows each organ through the
+  // seasons, the days and the hours; Suwen 2 (四氣調神大論) the four seasons; Suwen 5 (陰陽應象大論) the six qi.
+  // Order kept: season (0.6) frames the year, climate excesses (0.3–0.7), the hour (0.25). The numbers are a
+  // convention of the instrument (calibration plan, step 1 F). Unschuld & Tessenow, Huang Di Nei Jing Su Wen (2011).
   "rules": [
     {
       "id": "season-wood",
@@ -462,6 +466,7 @@
       "text": "Notte ({detail}): è il tempo dello Yin"
     },
     {
+      // The 24-hour organ clock as a fixed table (子午流注) is later acupuncture tradition, not the Neijing.
       "id": "organ-clock",
       "when": {
         "kind": "organ-clock"

@@ -40,7 +40,7 @@ const EPHEMERIS_ORDER = ['Transiti sul tema natale', 'Cielo', 'Aspetti nel cielo
 
 const W = 1000;
 const KIND_COLOR: Record<string, string> = {
-  'retrograde-count': 'var(--q-inward)', retrograde: 'var(--q-inward)', station: 'var(--q-pressure)',
+  'retrograde-count': 'var(--q-inward)', retrograde: 'var(--q-inward)', 'slow-motion': 'var(--q-inward)', station: 'var(--q-pressure)',
   eclipse: 'var(--q-tension)', 'lunar-phase': 'var(--q-sensitivity)', 'lunar-distance': 'var(--q-sensitivity)',
   photoperiod: 'var(--q-depletion)', 'photoperiod-change': 'var(--q-depletion)', geomagnetic: 'var(--q-agitation)',
   pressure: 'var(--q-pressure)', 'pressure-change': 'var(--q-pressure)', 'temperature-swing': 'var(--q-tension)',

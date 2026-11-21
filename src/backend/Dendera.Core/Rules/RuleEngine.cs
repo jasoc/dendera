@@ -18,12 +18,12 @@ public sealed record ZoneActivation(
     string Label,
     string Layer,
     bool Systemic,
-    double Score, // saturated activation 0..1 = 1 - e^(-raw/saturation)
+    double Score, // rarity 0..1 against the school's reference (fallback: 1 - e^(-raw/saturation))
 
     double Raw,
     string? DominantQuality,
     IReadOnlyDictionary<string, double> ByQuality, // raw sum per quality
-    IReadOnlyDictionary<string, double> QualityScores, // saturated 0..1 per quality, same formula as Score
+    IReadOnlyDictionary<string, double> QualityScores, // per quality: Score × (raw of the quality / raw of the node)
     double NatalBaseline,
     IReadOnlyList<ZoneContribution> Contributions,
     IReadOnlyDictionary<string, double> BySchool); // school id → that school's score
@@ -35,7 +35,9 @@ public static partial class RuleEngine
     /// Two passes. First, rules on signals from the influences. Then, if the school has rules of kind
     /// <see cref="SignalKinds.Node"/>, every node it activated becomes an internal signal (intensity = its score,
     /// quality = its dominant quality) and those rules run once on them: the school's own relations between
-    /// nodes ("liver → anger"). One pass only, so no cycles.
+    /// nodes ("liver → anger"). One pass only, so no cycles. The second pass reads the internal scale
+    /// 1 − e^(−raw/saturation), so the node rules' minIntensity thresholds keep their meaning; rarity
+    /// (<see cref="RuleSet.Rarity"/>) is applied to the final raw of every node, after the second pass.
     /// </summary>
     public static IReadOnlyList<ZoneActivation> Evaluate(
         RuleSet rules,
@@ -70,7 +72,7 @@ public static partial class RuleEngine
         if (rules.Rules.Any(r => r.When.Kind == SignalKinds.Node))
         {
             var at = signals.Count > 0 ? signals[0].At : default;
-            var nodes = Build(rules, contributions, natalBaseline)
+            var nodes = Build(rules, contributions, natalBaseline, rarity: false)
                 .Where(z => z.Score > 0)
                 .Select(z => new Signal(
                     $"node:{z.Zone}", SignalKinds.Node, "body", at, z.Score, Math.Round(z.Score * 100), "%",
@@ -80,20 +82,25 @@ public static partial class RuleEngine
             Apply(nodes, nodeRules: true);
         }
 
-        return Build(rules, contributions, natalBaseline);
+        return Build(rules, contributions, natalBaseline, rarity: true);
     }
+
+    /// <summary>The internal (fallback) scale: 1 − e^(−raw/saturation).</summary>
+    public static double Saturated(RuleSet rules, double raw) => 1 - Math.Exp(-raw / rules.Saturation);
 
     private static IReadOnlyList<ZoneActivation> Build(
         RuleSet rules,
         Dictionary<string, List<ZoneContribution>> contributions,
-        IReadOnlyDictionary<string, double>? natalBaseline) =>
+        IReadOnlyDictionary<string, double>? natalBaseline,
+        bool rarity) =>
         BodyZones.Ordered.Select(zone =>
         {
             var list = contributions.GetValueOrDefault(zone) ?? [];
             var raw = list.Sum(c => c.Amount);
             var byQuality = list.GroupBy(c => c.Quality).ToDictionary(g => g.Key, g => g.Sum(c => c.Amount));
             var dominant = byQuality.Count == 0 ? null : byQuality.MaxBy(kv => kv.Value).Key;
-            var score = 1 - Math.Exp(-raw / rules.Saturation);
+            var rare = rarity ? rules.Rarity?.Rarity(zone, raw) : null;
+            var score = rare ?? Saturated(rules, raw);
             return new ZoneActivation(
                 zone,
                 Lexicon.Name(zone),
@@ -103,7 +110,9 @@ public static partial class RuleEngine
                 raw,
                 dominant,
                 byQuality,
-                byQuality.ToDictionary(kv => kv.Key, kv => 1 - Math.Exp(-kv.Value / rules.Saturation)),
+                byQuality.ToDictionary(kv => kv.Key, kv => rare is { } r
+                    ? (raw > 0 ? r * kv.Value / raw : 0)
+                    : Saturated(rules, kv.Value)),
                 natalBaseline?.GetValueOrDefault(zone) ?? 0,
                 list.OrderByDescending(c => c.Amount).ToList(),
                 new Dictionary<string, double> { [rules.Id] = score });

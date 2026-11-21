@@ -2,7 +2,7 @@
   // School: Human Design. Rules are hypotheses: the journal + correlation engine tests them.
   // Centers are mapped onto the existing body zones. Zones must be ids from Dendera.Core/Rules/BodyZones.cs.
   "id": "human-design",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "name": "Human Design",
   "icon": "school-human-design",
   "tradition": "Sistema sintetico del 1987 (Ra Uru Hu): I Ching, astrologia, chakra, Kabbalah",
@@ -31,6 +31,9 @@
   "natalAmplification": 0.5,
   "saturation": 2.5,
 
+  // Weights per body: Sun and Earth carry 70% of the neutrino imprint, the other eleven activations share 30%
+  // (Jovian Archive, "Personality Sun: Filter of the Neutrino Ocean"; Ra Uru Hu, Rave I'Ching, 1989):
+  // per body 0.35 vs 0.027, i.e. 1 vs 0.08 relative. Calibration plan, step 1 G.
   "rules": [
     {
       "id": "transit-gate",
@@ -40,7 +43,7 @@
         "weight": 0.25,
         "quality": "flow",
         "tagWeights": {
-          "body": { "sun": 1.0, "earth": 1.0, "north-node": 0.6, "south-node": 0.6, "moon": 0.4, "*": 0.5 }
+          "body": { "sun": 1.0, "earth": 1.0, "*": 0.08 }
         }
       },
       "text": "{body} in porta {gate}: attiva il {center}"
@@ -53,7 +56,7 @@
         "weight": 0.35,
         "quality": "sensitivity",
         "tagWeights": {
-          "body": { "sun": 1.0, "earth": 1.0, "north-node": 0.6, "south-node": 0.6, "moon": 0.4, "*": 0.5 }
+          "body": { "sun": 1.0, "earth": 1.0, "*": 0.08 }
         }
       },
       "text": "{body} in porta {gate} condiziona il {center}, aperto nel tuo tema (condizionamento)"
@@ -66,7 +69,7 @@
         "weight": 0.8,
         "quality": "fusion",
         "tagWeights": {
-          "body": { "sun": 1.0, "earth": 1.0, "north-node": 0.6, "south-node": 0.6, "moon": 0.4, "*": 0.6 }
+          "body": { "sun": 1.0, "earth": 1.0, "*": 0.08 }
         }
       },
       "text": "{body} in porta {gate} completa il canale {channel} col tuo tema: {center} e {channelCenter} si collegano"

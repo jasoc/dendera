@@ -90,7 +90,7 @@ const EPHEMERIS_ORDER = ['Transiti sul tema natale', 'Cielo', 'Aspetti nel cielo
                     }
                   </ul>
                   <p class="muted hint">Tocca una luce nel corpo, o una riga qui sopra, per vedere quali scuole la
-                    accendono e a partire da quali segnali. La percentuale è l'intensità dell'influsso, non come stai.</p>
+                    accendono e a partire da quali segnali. La percentuale è la rarità dell'influsso (più sollecitato che nell'N% dei momenti), non come stai.</p>
                 }
               </aside>
             </div>

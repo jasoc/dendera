@@ -17,7 +17,7 @@ interface QualityBlock {
 
 /**
  * The consequences on one zone: total score, how it is reached, the split per school and, per quality, a shaded
- * bar (same saturation formula and colour as the body map) with the contributions that feed it.
+ * bar (rarity of the node split by the qualities' shares, same colour as the body map) with the contributions.
  */
 @Component({
   selector: 'app-zone-detail',
@@ -27,18 +27,23 @@ interface QualityBlock {
     @let z = zone();
     <header class="zd-head">
       <h3>{{ z.label }} <small class="layer">{{ layerLabel() }}</small></h3>
-      <span class="zd-pct" [style.color]="color(z.dominantQuality)" matTooltip="Intensità dell'influsso">{{ z.score * 100 | number: '1.0-0' }}%</span>
+      <span class="zd-pct" [style.color]="color(z.dominantQuality)" matTooltip="Rarità dell'influsso">{{ z.score * 100 | number: '1.0-0' }}%</span>
     </header>
     @if (description(); as d) { <p class="desc muted">{{ d }}</p> }
     <div class="meter big"><span [style.width.%]="z.score * 100" [style.--q]="color(z.dominantQuality)"></span></div>
-    <p class="influx">Intensità dell'influsso: <b>non misura come stai</b>, ma quanto i segnali premono qui secondo le
-      scuole attive. La direzione la dà la qualità (flusso sostiene, svuotamento toglie…); se lo senti davvero lo dice il diario.</p>
+    <p class="influx">Rarità dell'influsso: @if (z.score > 0) { secondo le scuole attive questo nodo è
+      <b>più sollecitato che nel {{ z.score * 100 | number: '1.0-0' }}% dei momenti</b> del cielo di riferimento. }
+      @else { nessun segnale tocca questo nodo ora. }
+      <b>Non misura come stai</b>: la direzione la dà la qualità (flusso sostiene, svuotamento toglie…); se lo senti davvero
+      lo dice il diario.</p>
 
     <p class="how muted">
       Ogni regola di una scuola aggiunge un contributo (peso × intensità del segnale
       @if (z.natalBaseline > 0.05) { × sensibilità natale }).
-      I contributi si sommano e si saturano: <b>1 − e<sup>−somma/{{ saturation() }}</sup></b>, quindi tanti segnali
-      avvicinano al 100% senza superarlo.
+      I contributi si sommano; la somma è confrontata con quella di ogni scuola su migliaia di momenti di un cielo
+      sintetico (1900–2100, 500 temi; per il meteo, il clima del tuo luogo): 50% è un momento ordinario, 95% è raro.
+      @if (uncalibrated().length > 0) { {{ uncalibrated().join(', ') }}: tabella da ricalibrare, qui vale la scala
+        provvisoria <b>1 − e<sup>−somma/{{ saturation() }}</sup></b>. }
       @if (schools().length > 1) { Più scuole attive: il totale è la <b>media</b> delle scuole che sanno parlare di
         questo nodo (anche quelle che oggi dicono zero), così più scuole non gonfiano nulla e il disaccordo si vede qui sotto. }
     </p>
@@ -146,9 +151,16 @@ export class ZoneDetail {
       .sort((a, b) => b.score - a.score),
   );
 
-  /** Saturation of the schools at work here (all 2.5 today); shown in the formula. */
+  /** Schools at work here still on the fallback scale (table missing or stale). */
+  protected readonly uncalibrated = computed(() =>
+    this.schools().filter((s) => this.catalog.school(s.id)?.calibration !== 'Calibrated').map((s) => s.name),
+  );
+
+  /** Saturation of the uncalibrated schools at work here (fallback scale); shown in the formula. */
   protected readonly saturation = computed(() => {
-    const values = [...new Set(this.schools().map((s) => this.catalog.school(s.id)?.saturation ?? 2.5))];
+    const values = [...new Set(this.schools()
+      .filter((s) => this.catalog.school(s.id)?.calibration !== 'Calibrated')
+      .map((s) => this.catalog.school(s.id)?.saturation ?? 2.5))];
     return values.length === 1 ? String(values[0]).replace('.', ',') : 's';
   });
 

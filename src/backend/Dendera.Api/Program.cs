@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Dendera.Api.Calibration;
 using Dendera.Api.Data;
 using Dendera.Api.Endpoints;
 using Dendera.Api.Services;
@@ -6,6 +7,29 @@ using Dendera.Core.Astro;
 using Dendera.Core.Signals;
 using Dendera.Sources;
 using Microsoft.EntityFrameworkCore;
+
+// Release ritual (docs/plans/calibration.md), not part of the web app:
+//   fetch-reference  download the Kp and weather history into src/backend/calibration (network, gitignored) and check
+//                    it against calibration/manifest.json; --update-manifest accepts new data from the sources
+//   calibrate        write rules/<school>.quantiles.json and docs/calibration-report.md (offline, deterministic)
+if (args.Length > 0 && args[0] is "calibrate" or "fetch-reference")
+{
+    var root = CalibrationRitual.FindBackendRoot(Directory.GetCurrentDirectory());
+    var ritual = new CalibrationRitual(root, Console.Out);
+    try
+    {
+        if (args[0] == "fetch-reference")
+            return await ReferenceFixtures.FetchAsync(ritual.FixturesDir, Dendera.Core.Calibration.ReferenceSet.Default,
+                args.Contains("--update-manifest"), Console.Out) ? 0 : 1;
+        ritual.Run();
+        return 0;
+    }
+    catch (InvalidOperationException ex)
+    {
+        Console.Error.WriteLine(ex.Message);
+        return 1;
+    }
+}
 
 var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
@@ -26,7 +50,8 @@ services.AddSingleton(TimeProvider.System);
 services.AddSingleton<IEphemeris, AstronomyEngineEphemeris>();
 services.AddSingleton(sp => new RuleSetCatalog(
     Path.Combine(AppContext.BaseDirectory, builder.Configuration["Dendera:RulesDirectory"] ?? "rules"),
-    sp.GetServices<ISignalProvider>().Select(p => p.Info)));
+    sp.GetServices<ISignalProvider>().Select(p => p.Info),
+    sp.GetRequiredService<ILoggerFactory>().CreateLogger<RuleSetCatalog>()));
 services.AddSingleton<InfluenceStatusBoard>();
 services.AddSingleton<ProfileContextFactory>();
 services.AddScoped<SignalHub>();
@@ -87,3 +112,4 @@ app.UseStaticFiles();
 app.MapFallbackToFile("index.html");
 
 app.Run();
+return 0;

@@ -38,6 +38,9 @@ import { MatTooltipModule } from '@angular/material/tooltip';
             <div>
               <h3>{{ s.name }}</h3>
               <p class="muted tradition">{{ s.tradition }}</p>
+              @if (s.calibration !== 'Calibrated') {
+                <span class="recal" matTooltip="La tabella di rarità non corrisponde più alle regole: finché non si ripete il rituale di calibrazione vale la scala provvisoria">da ricalibrare</span>
+              }
             </div>
             @if (store.current()) {
               <mat-slide-toggle [checked]="store.schools().includes(s.id)"
@@ -207,6 +210,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
     .card-head h3 { margin: 0; font-size: 16px; }
     .big-icon { color: var(--gold); }
     .tradition { margin: 2px 0 0; font-size: 12.5px; }
+    .recal { display: inline-block; margin-top: 4px; padding: 1px 8px; border-radius: 999px; font-size: 11.5px;
+      color: var(--mat-sys-on-error-container); background: var(--mat-sys-error-container); }
     h4 { font-size: 11.5px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin: 14px 0 6px; font-weight: 500; }
     .chips { display: flex; gap: 6px; flex-wrap: wrap; }
     .chip.infl { color: var(--text); text-decoration: none; }

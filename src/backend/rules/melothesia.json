@@ -2,7 +2,7 @@
   // School: Melotesia. Rules are hypotheses: the journal + correlation engine tests them.
   // Zones must be ids from Dendera.Core/Rules/BodyZones.cs (validated at load).
   "id": "melothesia",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "name": "Melotesia",
   "icon": "school-melothesia",
   "tradition": "Astrologia medica tolemaica e medievale (iatromatematica)",
@@ -61,14 +61,19 @@
       "effect": {
         "zonesFrom": ["transitBody", "natalPoint", "natalSign"],
         "weight": 1.0,
+        // Weight = the planet's orb / 15 (the Sun's): al-Bīrūnī, Book of Instruction (1029, trans. Wright 1934)
+        // §§ 436–437, also Lilly, Christian Astrology (1647) p. 107. Sun 15, Moon 12, Saturn and Jupiter 9,
+        // Mars 8, Venus and Mercury 7, outer planets 5 (later extension). Owner's decision D.1, calibration plan.
         "tagWeights": {
-          "transitBody": { "pluto": 1.0, "neptune": 1.0, "uranus": 1.0, "saturn": 1.0, "jupiter": 0.8,
-                           "mars": 0.7, "sun": 0.6, "venus": 0.5, "mercury": 0.5, "moon": 0.4, "*": 0.5 }
+          "transitBody": { "sun": 1.0, "moon": 0.8, "saturn": 0.6, "jupiter": 0.6, "mars": 0.53,
+                           "venus": 0.47, "mercury": 0.47, "uranus": 0.33, "neptune": 0.33, "pluto": 0.33, "*": 0.33 }
         }
       },
       "text": "{transitBody} in {aspect} con {natalPoint} natale ({natalSign})"
     },
     {
+      // Lilly, Christian Astrology (1647) p. 115: retrograde −5, the heaviest motion debility (signal intensity 1.0).
+      // The per-planet weights below are a convention of the instrument (no source gives them).
       "id": "retrograde",
       "when": { "kind": "retrograde" },
       "effect": {
@@ -83,6 +88,23 @@
       "text": "{body} retrogrado in {sign}: il flusso si ritira verso l'interno"
     },
     {
+      // Lilly, Christian Astrology (1647) p. 115: slow in motion −2 against retrograde −5. Same rule as the
+      // retrograde; the signal intensity (0.4 vs 1.0) carries the ratio.
+      "id": "slow-motion",
+      "when": { "kind": "slow-motion" },
+      "effect": {
+        "zonesFrom": ["body"],
+        "weight": 0.5,
+        "quality": "inward",
+        "tagWeights": {
+          "body": { "mercury": 1.0, "venus": 0.9, "mars": 0.9, "jupiter": 0.5, "saturn": 0.6,
+                    "uranus": 0.4, "neptune": 0.4, "pluto": 0.4 }
+        }
+      },
+      "text": "{body} lento in {sign}: il flusso rallenta"
+    },
+    {
+      // Stations: not in Lilly's table; threshold and weight are a convention of the instrument.
       "id": "station",
       "when": { "kind": "station", "minIntensity": 0.2 },
       "effect": { "zonesFrom": ["body", "sign"], "weight": 0.8, "quality": "pressure" },

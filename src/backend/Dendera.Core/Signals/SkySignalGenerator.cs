@@ -13,6 +13,8 @@ public sealed class SkySignalGenerator(IEphemeris ephemeris)
 {
     public const string Source = "ephemeris";
     private const double EclipseWindowDays = 15;
+    public const double RetrogradeIntensity = 1.0;
+    public const double SlowMotionIntensity = 0.4;
 
     public IReadOnlyList<Signal> At(DateTimeOffset at, SkyContext ctx) =>
         At(at, ctx, ephemeris.Eclipses(at.AddDays(-EclipseWindowDays), at.AddDays(EclipseWindowDays)));
@@ -26,7 +28,8 @@ public sealed class SkySignalGenerator(IEphemeris ephemeris)
         return result;
     }
 
-    private IReadOnlyList<Signal> At(DateTimeOffset at, SkyContext ctx, IReadOnlyList<EclipseEvent> eclipses)
+    /// <summary>Signals at one instant with a precomputed eclipse list (covering ±15 days around it).</summary>
+    public IReadOnlyList<Signal> At(DateTimeOffset at, SkyContext ctx, IReadOnlyList<EclipseEvent> eclipses)
     {
         var sky = ephemeris.Positions(at);
         var signals = new List<Signal>();
@@ -64,19 +67,30 @@ public sealed class SkySignalGenerator(IEphemeris ephemeris)
             var mean = Bodies.MeanSpeed(p.Body);
             var motion = p.Speed < 0 ? "retrograde" : "direct";
 
+            // Lilly, Christian Astrology (1647), p. 115, accidental debilities: retrograde −5, slow in motion −2.
+            // Intensity keeps that ratio: retrograde 5/5, slow 2/5. Stations are their own signal below.
             if (p.Speed < 0)
             {
                 count++;
-                // Stations are traditionally the most potent moments: strength grows as speed approaches 0.
-                var stationFactor = 1 - Math.Min(1, Math.Abs(p.Speed) / (0.25 * mean));
                 signals.Add(new Signal(
-                    $"retrograde:{p.Body}", SignalKinds.Retrograde, Source, at, 0.5 + 0.5 * stationFactor,
+                    $"retrograde:{p.Body}", SignalKinds.Retrograde, Source, at, RetrogradeIntensity,
                     p.Speed, "°/g",
                     new Dictionary<string, string> { ["body"] = p.Body, ["sign"] = p.Sign },
                     $"{Lexicon.Name(p.Body)} retrogrado",
                     $"{Zodiac.Format(p.Longitude)}, {p.Speed:+0.000;-0.000}°/g"));
             }
 
+            else if (p.Speed < mean)
+            {
+                signals.Add(new Signal(
+                    $"slow:{p.Body}", SignalKinds.SlowMotion, Source, at, SlowMotionIntensity,
+                    p.Speed, "°/g",
+                    new Dictionary<string, string> { ["body"] = p.Body, ["sign"] = p.Sign },
+                    $"{Lexicon.Name(p.Body)} lento",
+                    $"{Zodiac.Format(p.Longitude)}, {p.Speed:+0.000;-0.000}°/g (medio {mean:0.000})"));
+            }
+
+            // Station: no entry in Lilly's table; convention of the instrument (speed under 10% of the mean).
             if (Math.Abs(p.Speed) < 0.1 * mean)
             {
                 signals.Add(new Signal(
@@ -105,7 +119,7 @@ public sealed class SkySignalGenerator(IEphemeris ephemeris)
         {
             var a = bodies[i];
             var b = bodies[j];
-            var hit = AspectFinder.Find(a.Longitude, a.Speed, b.Longitude, b.Speed, AspectCatalog.Default, AspectCatalog.SkyOrbFactor, majorOnly: true);
+            var hit = AspectFinder.Find(a.Longitude, a.Speed, b.Longitude, b.Speed, AspectCatalog.Default, AspectCatalog.SkyOrb(a.Body, b.Body), majorOnly: true);
             if (hit is null) continue;
 
             signals.Add(new Signal(
@@ -128,7 +142,7 @@ public sealed class SkySignalGenerator(IEphemeris ephemeris)
         foreach (var t in sky.Where(p => p.Body != Bodies.NorthNode))
         foreach (var n in natal.Points)
         {
-            var hit = AspectFinder.Find(t.Longitude, t.Speed, n.Longitude, 0, AspectCatalog.Default, AspectCatalog.TransitOrbFactor);
+            var hit = AspectFinder.Find(t.Longitude, t.Speed, n.Longitude, 0, AspectCatalog.Default, AspectCatalog.TransitOrb(t.Body));
             if (hit is null) continue;
 
             signals.Add(new Signal(

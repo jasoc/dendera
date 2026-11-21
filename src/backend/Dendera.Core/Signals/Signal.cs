@@ -36,6 +36,7 @@ public static class SignalKinds
     public const string Placement = "placement";
     public const string Retrograde = "retrograde";
     public const string Station = "station";
+    public const string SlowMotion = "slow-motion";
     public const string RetrogradeCount = "retrograde-count";
     public const string SkyAspect = "sky-aspect";
     public const string TransitAspect = "transit-aspect";

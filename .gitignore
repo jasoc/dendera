@@ -29,3 +29,7 @@ Thumbs.db
 
 # Local dev environment
 .env
+
+# Calibration reference fixtures: downloaded on demand (`dotnet run --project Dendera.Api -- fetch-reference`);
+# only their content hashes are committed (src/backend/calibration/manifest.json)
+src/backend/calibration/*.csv.gz

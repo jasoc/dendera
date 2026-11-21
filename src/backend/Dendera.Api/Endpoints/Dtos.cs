@@ -1,3 +1,4 @@
+using Dendera.Core.Calibration;
 using Dendera.Api.Data;
 using Dendera.Api.Services;
 using Dendera.Core;
@@ -124,7 +125,8 @@ public sealed record CatalogSchool(
     IReadOnlyList<string> References, IReadOnlyList<string> Requires, string Baseline, string BaselineText,
     double Saturation, double NatalAmplification, IReadOnlyList<ReferenceTable> Tables,
     IReadOnlyList<CatalogRule> Rules,
-    IReadOnlyList<CatalogCorrespondence> Correspondences)
+    IReadOnlyList<CatalogCorrespondence> Correspondences,
+    CalibrationState Calibration)
 {
     public static CatalogSchool From(RuleSet s) => new(
         s.Id, s.Version, s.Name, s.Description, s.Tradition, s.Icon, s.References, s.Requires, s.Baseline,
@@ -137,7 +139,8 @@ public sealed record CatalogSchool(
         s.Saturation, s.NatalAmplification, s.Tables,
         s.Rules.Select(r => CatalogRule.From(s, r)).ToList(),
         s.Correspondences.Select(kv => new CatalogCorrespondence(
-            kv.Key, Lexicon.Name(kv.Key), kv.Value.Select(z => new CatalogZoneRef(z, Lexicon.Name(z))).ToList())).ToList());
+            kv.Key, Lexicon.Name(kv.Key), kv.Value.Select(z => new CatalogZoneRef(z, Lexicon.Name(z))).ToList())).ToList(),
+        s.Calibration);
 }
 
 public sealed record CatalogZoneRef(string Id, string Label);

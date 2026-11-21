@@ -60,7 +60,8 @@ Rules of engagement:
 - Medieval rule: don't operate on the body part ruled by the Moon's current sign (implemented
   as the `moon-sign` rule).
 - **Retrograde**: apparent backward motion seen from Earth. **Stations** (speed ≈ 0) are
-  traditionally the most potent moments; retrograde intensity grows near stations.
+  traditionally the most potent moments (own `station` signal). Retrograde and slow motion follow
+  Lilly's debilities (*Christian Astrology* p. 115: retrograde −5, slow −2 → intensity 1 and 0.4).
 - **Biometeorology**: effects of weather, light and geomagnetism on the body (Hippocrates'
   *Airs, Waters, Places*, seasonal affective disorder, Chizhevsky's heliobiology).
 - **Chinese medicine (TCM)**: the twelve zang-fu and their meridians, the five phases and their
@@ -94,14 +95,18 @@ dendera/
                             SchoolEngine (combine schools), NatalBaselines, BodyZones vocabulary
         Readings/           Reading (one instant), Timeline (tracks)
         Journal/            journal model + CorrelationEngine
+        Calibration/        reference set, climate zones, quantile tables (rarity), hashes
         Lexicon.cs          Italian display names for every id (also kinds and tag names)
       Dendera.Sources/      IMPURE influences: GfzKpProvider, OpenMeteoWeatherProvider, SchumannProvider;
                             OpenMeteoGeocoder
       Dendera.Api/          ASP.NET Core minimal API + EF Core SQLite (profiles with active schools,
                             journal); SignalHub, RuleSetCatalog, InfluenceStatusBoard;
-                            also serves the built frontend from wwwroot/
-      rules/                schools as versioned JSON (melothesia, biometeorology, tcm, human-design, tantric-yoga),
-                            copied to the API output
+                            also serves the built frontend from wwwroot/; Calibration/ = the ritual
+                            (`calibrate`, `fetch-reference` commands)
+      rules/                schools as versioned JSON (melothesia, biometeorology, tcm, human-design, tantric-yoga)
+                            + their <id>.quantiles.json (written by the ritual), copied to the API output
+      calibration/          manifest.json = content hashes of the ritual's reference fixtures (Kp, hourly weather per
+                            climate zone, 1991–2020); the *.csv.gz themselves are gitignored, `fetch-reference` downloads them
       tests/Dendera.Core.Tests/   (references Core and Sources; Influences.cs mirrors Program.cs)
     frontend/               Angular 22 (standalone, zoneless, signals) + Angular Material 3, Node pinned in .node-version
       src/_theme-colors.scss  M3 palettes generated from the seeds (gold, violet, blue, indigo)
@@ -139,7 +144,7 @@ gate, center…), stable `Label`, instant `Detail`.
  EphemerisProvider (pure)      ─┐
  TcmCalendarProvider (pure)    ─┤
  HumanDesignProvider (pure)    ─┼─► Signal[] ─► per school: RuleEngine(school, its natal baseline)
- GfzKpProvider (HTTP)          ─┤        │         └─► SchoolEngine: 1 − Π(1 − score) per zone (+ BySchool split)
+ GfzKpProvider (HTTP)          ─┤        │         └─► SchoolEngine: consensus mean per zone (+ BySchool split)
  OpenMeteoWeatherProvider (HTTP)┤        │
  SchumannProvider (HTTP, derived)┘       └─► daily series (signals, combined zones, per-school zones)
                                               + journal ─► CorrelationEngine ─► findings
@@ -151,20 +156,45 @@ gate, center…), stable `Label`, instant `Detail`.
   Frame-aligned (pure) providers have `SampleValidity = 0`. A failing provider never breaks a
   reading (`SignalHub` reports its status; the UI shows source chips with influence icons and
   a "derivata" badge for derived data).
-- **Aspects are facts**, not school data: `AspectCatalog.Default` (8 aspects; transit orb ×0.4,
-  sky orb ×0.5, major only). Schools filter on the `aspect` tag if they want fewer.
+- **Aspects are facts**, not school data: `AspectCatalog.Default` (8 aspects). Orbs are per
+  planet (al-Bīrūnī/Lilly): sky = sum of the two moieties, major only; transit = the transiting
+  planet's moiety; minor aspects half. Schools filter on the `aspect` tag if they want fewer.
 - **Schools are data**: correspondences (symbol → zones), natal amplification, saturation,
   `icon`, `tradition`, `references`, `requires`, `baseline` (`melothesia` | `human-design` |
   `none`), and rules (`when` kind/tags/minIntensity, `"*"` = any tag value → `effect`
   zones / zonesFrom tags, weight, quality, tagWeights, Italian text template with `{tag}`
   placeholders). Validated at load: unknown zones, unknown baseline, unregistered required
   influences, rules on kinds no required influence emits — all fail fast.
-- **Zone score** per school = `1 - exp(-raw / saturation)`, raw = Σ weight × intensity × tagWeight ×
-  (1 + natalAmplification × natalBaseline[zone]). **Combined** = the **mean of the schools that
+- **Zone score** per school = **rarity**: the share of moments of the school's reference sky with a
+  raw sum strictly lower than now ("più sollecitato che nell'N% dei momenti"; 50% ordinary, 95%
+  rare; **zero stays zero**). raw = Σ weight × intensity × tagWeight × (1 + natalAmplification ×
+  natalBaseline[zone]). The reference distribution is a quantile table per school and node
+  (`rules/<school>.quantiles.json`, 101 quantiles), global for sky-only schools, per **climate
+  zone** for schools that read the local weather (`ClimateZones`: the person's place → nearest of
+  seven reference places). `ProfileContextFactory` hands each school the table of the profile's
+  current place (`RuleSet.Rarity`). Without an up-to-date table the school falls back to
+  `1 - exp(-raw / saturation)` and the catalog shows it "da ricalibrare". **Combined** = the **mean of the schools that
   cover the node** (`RuleSet.Covers`: zones its rules or correspondences can reach), zeros
   included: consensus, so more schools never inflate a node; a single school is exactly its own
-  score. Combined natal baseline = max over those schools. Weights, orbs and saturations are
-  provisional until the calibration (`docs/plans/calibration.md`).
+  score. Combined natal baseline = max over those schools. Numbers of the traditions carry their
+  source in the rule files (orbs, motion, HD, biometeorology); the others are marked as
+  conventions of the instrument (`docs/plans/calibration.md`).
+- **Calibration ritual** (release step, not per user), from `src/backend`:
+  `dotnet run --project Dendera.Api -- calibrate` (offline, deterministic, ~40 s) writes the
+  quantile tables and `docs/calibration-report.md`. Reference: 500 synthetic births and 50 000
+  random instants 1900–2100 (seeded, no personal data); weather schools: 20 000 three-hour slots
+  per climate zone 1991–2020 from the fixtures in `src/backend/calibration` (Kp from GFZ, weather
+  from the Open-Meteo archive, ~13 MB). They are **not committed**: run `-- fetch-reference` once
+  (network) on a fresh clone. Only `calibration/manifest.json` (SHA-256 of each file's content) is
+  committed; the ritual refuses files that differ from it and the reference hash is built from it.
+  If the sources change their data, `fetch-reference` says so; `--update-manifest` accepts it, then
+  re-run the ritual and commit manifest and tables together. **Re-run it**
+  when anything changes a school's raw sums (rules, weights, tagWeights, minIntensity,
+  correspondences, natalAmplification, saturation, requires) and **bump
+  `ReferenceSet.SignalsVersion`** first when an influence changes how it computes intensity or
+  what it emits (orbs, Kp mapping, weather thresholds, new kinds). Texts, names, references,
+  tables and icons need nothing. `CalibrationTests` fails on a stale table, so it cannot ship.
+  Schumann is not in the reference (24 h feed only).
 - **Natal baseline**: zones emphasized by the birth chart, per school strategy (melothesia:
   luminaries and Ascendant weigh most; human-design: defined centers); shown as dashed gold
   rings on the body map.
@@ -173,12 +203,13 @@ gate, center…), stable `Label`, instant `Detail`.
   `?schools=a,b` overrides without saving. `GET /api/catalog` = influences (+ last status),
   schools (rules, correspondences), zones.
 - **Second pass (node rules)**: after a school's rules ran on the signals, each node it activated
-  becomes an internal signal of kind `node` (intensity = score, tag `quality` = its dominant
+  becomes an internal signal of kind `node` (intensity = the internal scale `1 − e^(−raw/saturation)`,
+  not the rarity, so node rules' `minIntensity` keep their meaning; tag `quality` = its dominant
   quality) and the same school's rules with `when.kind = "node"` run once on them — e.g. TCM
   "liver sollecitato → anger". Per school, one pass only (no chains, no cycles).
-- **Per-quality scores**: `ZoneActivation.QualityScores` saturates each quality like the zone
-  score; schools combine per quality by the same consensus mean. The UI calls the score
-  "intensità dell'influsso": how much the signals press on a node, not how the person feels.
+- **Per-quality scores**: `ZoneActivation.QualityScores` = node rarity × (raw of the quality / raw
+  of the node); schools combine per quality by the same consensus mean. The UI calls the score
+  "rarità dell'influsso": how unusual the pressure of the signals on a node is, not how the person feels.
 - **Body nodes** are a fixed vocabulary: `Dendera.Core/Rules/BodyZones.cs` ↔
   `src/frontend/src/app/components/body-map.ts` (2D ANCHORS) ↔
   `components/body-3d/anchors-3d.ts` (3D anchors) and `channels-3d.ts` (meridian and nadi paths).

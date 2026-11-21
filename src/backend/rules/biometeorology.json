@@ -2,7 +2,7 @@
   // School: Biometeorologia. Rules are hypotheses: the journal + correlation engine tests them.
   // Zones must be ids from Dendera.Core/Rules/BodyZones.cs (validated at load).
   "id": "biometeorology",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "name": "Biometeorologia",
   "icon": "school-biometeorology",
   "tradition": "Biometeorologia umana: effetti di tempo atmosferico, luce e geomagnetismo sul corpo",
@@ -22,6 +22,8 @@
 
   "rules": [
     {
+      // SAD: Rosenthal et al., Arch. Gen. Psychiatry 41:72–80 (1984); more winter SAD further north ("Prevalence of
+      // seasonal affective disorder at four latitudes", 1990). No threshold in hours of light: convention.
       "id": "light-deficit",
       "when": { "kind": "photoperiod", "minIntensity": 0.05 },
       "effect": { "zones": ["sleep", "mood", "vitality", "melancholic"], "weight": 0.9, "quality": "depletion" },
@@ -34,42 +36,51 @@
       "text": "La luce cambia in fretta ({detail})"
     },
     {
+      // Storms from Kp 5 (G1), NOAA SWPC Space Weather Scales; heart attacks and strokes reported on storm days
+      // (scoping review of 36 studies, Cureus 2025; Int. J. Biometeorol. 58:799, 2014). Intensity 0.2 = Kp 5.
       "id": "geomagnetic",
-      "when": { "kind": "geomagnetic", "minIntensity": 0.1 },
+      "when": { "kind": "geomagnetic", "minIntensity": 0.2 },
       "effect": { "zones": ["nervous-system", "sleep", "heart", "head", "fear"], "weight": 1.0, "quality": "agitation" },
       "text": "Attività geomagnetica ({detail}): il campo terrestre vibra"
     },
     {
+      // Kimoto et al., Intern. Med. 50 (2011): drop > 5 hPa on the day before. Intensity 0.5 = 5 hPa.
       "id": "pressure-drop",
-      "when": { "kind": "pressure-change", "tags": { "direction": ["drop"] }, "minIntensity": 0.15 },
+      "when": { "kind": "pressure-change", "tags": { "direction": ["drop"] }, "minIntensity": 0.5 },
       "effect": { "zones": ["head", "knees", "skeleton"], "weight": 0.8, "quality": "pressure" },
       "text": "Pressione in calo ({detail})"
     },
     {
+      // Rises: the literature reports drops; same 5 hPa threshold by symmetry, convention.
       "id": "pressure-rise",
-      "when": { "kind": "pressure-change", "tags": { "direction": ["rise"] }, "minIntensity": 0.15 },
+      "when": { "kind": "pressure-change", "tags": { "direction": ["rise"] }, "minIntensity": 0.5 },
       "effect": { "zones": ["head"], "weight": 0.3, "quality": "pressure" },
       "text": "Pressione in salita ({detail})"
     },
     {
+      // Okuma et al., SpringerPlus 4 (2015): 6–10 hPa below 1013 at sea level. Intensity 0.6 = 1007 hPa.
       "id": "low-pressure",
-      "when": { "kind": "pressure", "minIntensity": 0.2 },
+      "when": { "kind": "pressure", "minIntensity": 0.6 },
       "effect": { "zones": ["head", "vitality"], "weight": 0.4, "quality": "depletion" },
       "text": "Bassa pressione ({detail})"
     },
     {
+      // Guo et al., PLoS ONE 6 (2011): > 3 °C between neighbouring days' mean temperature. Intensity 0.3 = 3 °C.
       "id": "temperature-swing",
-      "when": { "kind": "temperature-swing", "minIntensity": 0.2 },
+      "when": { "kind": "temperature-swing", "minIntensity": 0.3 },
       "effect": { "zones": ["circulation", "vitality"], "weight": 0.4, "quality": "tension" },
       "text": "Sbalzo termico ({detail})"
     },
     {
+      // Humidity: no threshold from the sources read in step 1; convention.
       "id": "humidity",
       "when": { "kind": "humidity", "minIntensity": 0.3 },
       "effect": { "zones": ["skeleton", "lymph"], "weight": 0.3, "quality": "pressure" },
       "text": "Umidità alta ({detail})"
     },
     {
+      // Derived index (schumannresonancelive.com, CC0, relative 0–100 from the Tomsk TSU spectrograms): no
+      // published threshold. ≥ 60 kept as a conservative convention until samples are persisted and calibrated.
       "id": "schumann",
       "when": { "kind": "schumann", "minIntensity": 0.6 },
       "effect": { "zones": ["nervous-system", "sleep", "mood"], "weight": 0.5, "quality": "agitation" },
