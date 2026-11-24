@@ -41,6 +41,18 @@ export class ProfileStore {
     }
   }
 
+  /** Sets the whole list of active schools at once (at least one; the caller keeps an empty choice local). */
+  async setSchools(ids: string[]): Promise<void> {
+    const p = this.current();
+    if (!p || this.saving() || ids.length === 0) return;
+    this.saving.set(true);
+    try {
+      this.replace(await this.api.setSchools(p.id, ids));
+    } finally {
+      this.saving.set(false);
+    }
+  }
+
   replace(profile: Profile): void {
     this.profiles.update((list) => list.map((x) => (x.id === profile.id ? profile : x)));
   }

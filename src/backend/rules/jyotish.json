@@ -1,0 +1,73 @@
+{
+  // School: Jyotish (Indian astrology). Same sky as Melotesia, read on the sidereal zodiac with its own body map:
+  // the cross-check between two independent astrologies. Zones: Dendera.Core/Rules/BodyZones.cs.
+  "id": "jyotish",
+  "version": "1.0.0",
+  "name": "Jyotish",
+  "icon": "school-jyotish",
+  "lineage": "vedic",
+  "parents": [],
+  "tradition": "Astrologia vedica: zodiaco siderale, nakshatra, dasha",
+  "description": "L'astrologia indiana legge lo stesso cielo sullo zodiaco siderale (le stelle, non le stagioni): i segni sono le membra del Kalapurusha, l'uomo cosmico, dalla testa (Ariete) ai piedi (Pesci); i nove graha (sette pianeti più Rahu e Ketu) governano i tessuti (dhatu) e i dosha; il dasha in corso e il nakshatra della Luna dicono quali pianeti guidano il tempo presente.",
+  "references": [
+    "Parashara, Brihat Parashara Hora Shastra: le membra del Kalapurusha (cap. 4), dhatu e dosha dei graha (cap. 3), i dasha vimshottari",
+    "Varahamihira, Brihat Jataka (VI sec.), I.4: i segni sulle parti del corpo",
+    "Ayanamsha di Lahiri (Indian Calendar Reform Committee, 1955)"
+  ],
+  "requires": ["lunar-stations", "life-times"],
+  "baseline": "none",
+  "natalAmplification": 0,
+  "saturation": 2.5,
+
+  "correspondences": {
+    // Kalapurusha (BPHS 4; Brihat Jataka I.4), on the sidereal signs.
+    "aries": ["head"], "taurus": ["mouth", "throat"], "gemini": ["shoulders"], "cancer": ["heart"],
+    "leo": ["stomach"], "virgo": ["gut"], "libra": ["kidneys"], "scorpio": ["pelvis"],
+    "sagittarius": ["thighs"], "capricorn": ["knees"], "aquarius": ["calves"], "pisces": ["feet"],
+    // Grahas → dhatus and doshas (BPHS 3): Sun bones, pitta; Moon blood, vata and kapha; Mars marrow, pitta;
+    // Mercury skin, all three; Jupiter fat (here the liver, its organ in later texts), kapha; Venus semen,
+    // vata and kapha; Saturn sinews, vata; Rahu like Saturn, Ketu like Mars.
+    "sun": ["skeleton", "pitta"], "moon": ["circulation", "vata", "kapha"], "mars": ["skeleton", "pitta"],
+    "mercury": ["skin", "vata", "pitta", "kapha"], "jupiter": ["liver", "kapha"], "venus": ["pelvis", "vata", "kapha"],
+    "saturn": ["sinews", "nervous-system", "vata"], "rahu": ["nervous-system", "vata"], "ketu": ["pitta"]
+  },
+
+  "rules": [
+    {
+      // Every graha on its sidereal sign: the sign's limb and the graha's tissues. Luminaries weigh most
+      // (convention, like the aphetic places of the West).
+      "id": "graha-sign",
+      "name": "Graha in un segno siderale → la membra del Kalapurusha",
+      "about": "Ogni segno dello zodiaco siderale è una parte del corpo dell'uomo cosmico; il graha che vi si trova la attiva insieme ai suoi tessuti.",
+      "source": "Parashara, BPHS (Kalapurusha); Varahamihira, Brihat Jataka, I.4",
+      "when": { "kind": "sidereal-placement" },
+      "effect": {
+        "zonesFrom": ["sign"],
+        "weight": 0.25,
+        "quality": "sensitivity",
+        "tagWeights": { "body": { "sun": 1.0, "moon": 1.0, "rahu": 0.5, "ketu": 0.5, "*": 0.6 } }
+      },
+      "text": "{body} in {sign} siderale ({nakshatra})"
+    },
+    {
+      // The running Vimshottari period (BPHS): mahadasha for years, antardasha for months. Weight: convention.
+      "id": "dasha",
+      "name": "Periodo vimshottari → i signori del periodo",
+      "about": "Il pianeta del mahadasha guida anni, quello dell'antardasha mesi: i loro tessuti e dosha sono in primo piano.",
+      "source": "Parashara, BPHS (vimshottari dasha)",
+      "when": { "kind": "dasha" },
+      "effect": { "zonesFrom": ["lord", "subLord"], "weight": 0.6, "quality": "sensitivity" },
+      "text": "Mahadasha di {lord}, antardasha di {subLord}"
+    },
+    {
+      // The Moon's nakshatra and its lord (BPHS). Weight: convention.
+      "id": "moon-nakshatra",
+      "name": "Nakshatra della Luna → il suo signore",
+      "about": "La stazione lunare del giorno è governata da un pianeta, che dà il tono alla giornata.",
+      "source": "Parashara, BPHS",
+      "when": { "kind": "nakshatra" },
+      "effect": { "zonesFrom": ["lord"], "weight": 0.3, "quality": "flow" },
+      "text": "Luna in {nakshatra}, pada {pada}: governa {lord}"
+    }
+  ]
+}

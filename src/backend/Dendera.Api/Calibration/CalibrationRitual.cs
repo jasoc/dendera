@@ -25,6 +25,8 @@ public sealed class CalibrationRitual(string backendRoot, TextWriter log)
     private static readonly IReadOnlyList<InfluenceInfo> Influences =
     [
         EphemerisProvider.Influence, TcmCalendarProvider.Influence, HumanDesignProvider.Influence,
+        PlanetaryHoursProvider.Influence, LunarStationsProvider.Influence, LifeTimesProvider.Influence,
+        DecumbitureProvider.Influence, NoaaSpaceWeatherProvider.Influence, OpenMeteoAirQualityProvider.Influence,
         GfzKpProvider.Influence, OpenMeteoWeatherProvider.Influence, SchumannProvider.Influence,
     ];
 
@@ -126,25 +128,11 @@ public sealed class CalibrationRitual(string backendRoot, TextWriter log)
 
     private static HashSet<string> Needs(IEnumerable<RuleSet> schools) => schools.SelectMany(s => s.Requires).ToHashSet();
 
-    /// <summary>Raw sum per school, node and sample (parallel, written by index: deterministic).</summary>
+    /// <summary>Raw sum per school, node and sample, then the tables and their stability.</summary>
     private static List<TableResult> Sample(
         IReadOnlyList<RuleSet> schools, int count,
-        Func<int, (IReadOnlyList<Signal> Signals, NatalBaselines Baselines)> at)
-    {
-        var nodes = schools.Select(s => BodyZones.Ordered.Where(s.Covers.Contains).ToList()).ToList();
-        var raws = schools.Select((_, k) => nodes[k].Select(_ => new float[count]).ToArray()).ToArray();
-        Parallel.For(0, count, i =>
-        {
-            var (signals, baselines) = at(i);
-            for (var k = 0; k < schools.Count; k++)
-            {
-                var acts = RuleEngine.Evaluate(schools[k], signals, baselines.GetValueOrDefault(schools[k].Id));
-                var byZone = acts.ToDictionary(a => a.Zone, a => a.Raw);
-                for (var n = 0; n < nodes[k].Count; n++) raws[k][n][i] = (float)byZone[nodes[k][n]];
-            }
-        });
-        return schools.Select((_, k) => TableResult.From(nodes[k], raws[k])).ToList();
-    }
+        Func<int, (IReadOnlyList<Signal> Signals, NatalBaselines Baselines)> at) =>
+        ReferenceSampler.Raws(schools, count, i => at(i)).Select(r => TableResult.From(r.Nodes, r.Raws)).ToList();
 
     // ---------- report ----------
 
@@ -262,18 +250,13 @@ public sealed class CalibrationRitual(string backendRoot, TextWriter log)
     /// <summary>The influences' signals at one reference moment, computed with the same code the API runs.</summary>
     private sealed class SignalSources(IEphemeris eph, IReadOnlyList<EclipseEvent> eclipses)
     {
-        private readonly SkySignalGenerator _sky = new(eph);
-        private readonly TcmCalendarProvider _tcm = new(eph);
-        private readonly HumanDesignProvider _hd = new(eph);
+        private readonly PureSignals _pure = new(eph, eclipses);
 
         public IReadOnlyList<Signal> Gather(
             IReadOnlySet<string> needs, DateTimeOffset at, double lat, double lon, NatalChart natal, HumanDesign.Chart hd,
             IReadOnlyDictionary<DateTimeOffset, double>? kp, IReadOnlyDictionary<DateTimeOffset, Hour>? weather)
         {
-            var signals = new List<Signal>(128);
-            if (needs.Contains(EphemerisProvider.Id)) signals.AddRange(_sky.At(at, new SkyContext(lat, lon, natal), eclipses));
-            if (needs.Contains(TcmCalendarProvider.Id)) signals.AddRange(_tcm.At(at, lon));
-            if (needs.Contains(HumanDesignProvider.Id)) signals.AddRange(_hd.At(at, hd));
+            var signals = _pure.Gather(needs, at, lat, lon, natal, hd);
             if (needs.Contains(GfzKpProvider.Influence.Id) && kp is not null && kp.TryGetValue(at, out var k))
                 signals.Add(GfzKpProvider.ToSignal(at, k, "def"));
             if (needs.Contains(OpenMeteoWeatherProvider.Influence.Id) && weather is not null)

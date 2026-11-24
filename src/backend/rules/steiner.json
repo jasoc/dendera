@@ -1,0 +1,94 @@
+{
+  // School: Steiner's occult anatomy, with Paracelsus. The four members of the human being moved by the
+  // septennials of life and by day and night; the planetary organs (Ptolemaic in origin: declared parent).
+  // Zones: Dendera.Core/Rules/BodyZones.cs.
+  "id": "steiner",
+  "version": "1.0.0",
+  "name": "Antroposofia (Steiner e Paracelso)",
+  "icon": "school-steiner",
+  "lineage": "anthroposophy",
+  "parents": ["western-astrology", "hermetic"],
+  "tradition": "Fisiologia occulta di Rudolf Steiner, sulla scia di Paracelso",
+  "description": "L'essere umano ha quattro arti: il corpo fisico, il corpo eterico (la vita, i ritmi), il corpo astrale (le emozioni) e l'Io. Ogni settennio della vita ne fa nascere uno: a sette anni l'eterico, a quattordici l'astrale, a ventuno l'Io. Di notte astrale e Io si staccano e il corpo si rigenera. Sette organi rispecchiano i sette pianeti: il giorno della settimana e il moto del pianeta li toccano.",
+  "references": [
+    "Rudolf Steiner, L'educazione del bambino dal punto di vista della scienza dello spirito (1907): i settenni",
+    "Rudolf Steiner, Teosofia (1904): i quattro arti dell'essere umano",
+    "Rudolf Steiner, Fisiologia occulta (GA 128, 1911): gli organi planetari",
+    "Paracelso, Opus paramirum (1531): Zolfo, Mercurio e Sale; i pianeti nel corpo"
+  ],
+  "requires": ["ephemeris", "planetary-hours", "life-times"],
+  "baseline": "none",
+  "natalAmplification": 0,
+  "saturation": 2.5,
+
+  "tables": [
+    {
+      "title": "I tre principi di Paracelso nell'uomo tripartito di Steiner",
+      "columns": ["Principio", "Qualità", "Sistema (Steiner)"],
+      "rows": [
+        ["Sale", "forma, raffreddamento, deposito", "neuro-sensoriale (capo)"],
+        ["Mercurio", "fluidità, mediazione, ritmo", "ritmico (petto: respiro e cuore)"],
+        ["Zolfo", "calore, combustione, volontà", "metabolico-motorio (ventre e arti)"]
+      ]
+    }
+  ],
+
+  "correspondences": {
+    // Planetary organs (Steiner, GA 128): Saturn the spleen (here stomach and spleen), Jupiter the liver, Mars the
+    // gallbladder, Mercury the lungs, Venus the kidneys, the Sun the heart, the Moon the brain and reproduction.
+    "saturn": ["stomach"], "jupiter": ["liver"], "mars": ["zf-gallbladder"], "mercury": ["lungs"],
+    "venus": ["kidneys"], "sun": ["heart"], "moon": ["brain", "pelvis"]
+  },
+
+  "rules": [
+    // Septennials (The Education of the Child, 1907): the physical body is born at birth, the etheric at 7 (second
+    // teeth), the astral at 14 (puberty), the I at 21. Weight: convention.
+    { "id": "septennial-physical", "name": "Primo settennio → corpo fisico",
+      "about": "Fino al cambio dei denti si forma il corpo fisico.",
+      "source": "Rudolf Steiner, L'educazione del bambino (1907)", "when": { "kind": "septennial", "tags": { "septennial": ["1"] } },
+      "effect": { "zones": ["physical-body"], "weight": 0.6, "quality": "flow" }, "text": "Primo settennio: si forma il corpo fisico" },
+    { "id": "septennial-etheric", "name": "Secondo settennio → corpo eterico",
+      "about": "Dai 7 ai 14 anni nasce il corpo eterico.",
+      "source": "Rudolf Steiner, L'educazione del bambino (1907)", "when": { "kind": "septennial", "tags": { "septennial": ["2"] } },
+      "effect": { "zones": ["etheric-body"], "weight": 0.6, "quality": "flow" }, "text": "Secondo settennio: nasce il corpo eterico" },
+    { "id": "septennial-astral", "name": "Terzo settennio → corpo astrale",
+      "about": "Dai 14 ai 21 anni nasce il corpo astrale.",
+      "source": "Rudolf Steiner, L'educazione del bambino (1907)", "when": { "kind": "septennial", "tags": { "septennial": ["3"] } },
+      "effect": { "zones": ["astral-body"], "weight": 0.6, "quality": "flow" }, "text": "Terzo settennio: nasce il corpo astrale" },
+    { "id": "septennial-ego", "name": "Dopo i 21 anni → l'Io",
+      "about": "Dai ventun anni l'Io lavora sugli altri arti.",
+      "source": "Rudolf Steiner, L'educazione del bambino (1907)", "when": { "kind": "septennial", "tags": { "septennial": ["4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16"] } },
+      "effect": { "zones": ["ego"], "weight": 0.4, "quality": "flow" }, "text": "Dopo i ventun anni: l'Io lavora sugli altri arti ({detail})" },
+
+    // Day and night (Theosophy): in sleep the astral body and the I leave the physical and etheric bodies,
+    // which regenerate. Weight: convention.
+    { "id": "night-regeneration", "name": "Notte → corpo fisico ed eterico",
+      "about": "Nel sonno astrale e Io si staccano e il corpo si rigenera.",
+      "source": "Rudolf Steiner, Teosofia (1904)", "when": { "kind": "day-phase", "tags": { "light": ["night"] } },
+      "effect": { "zones": ["physical-body", "etheric-body"], "weight": 0.3, "quality": "inward" },
+      "text": "Notte: il corpo fisico ed eterico si rigenerano" },
+    { "id": "day-consciousness", "name": "Giorno → corpo astrale e Io",
+      "about": "Di giorno astrale e Io sono desti nel corpo.",
+      "source": "Rudolf Steiner, Teosofia (1904)", "when": { "kind": "day-phase", "tags": { "light": ["day"] } },
+      "effect": { "zones": ["astral-body", "ego"], "weight": 0.3, "quality": "flow" },
+      "text": "Giorno: il corpo astrale e l'Io sono svegli nel corpo" },
+
+    // The planet of the weekday on its organ (the weekdays named after the planets; Steiner on the planetary
+    // organs). Weight: convention.
+    { "id": "weekday-organ", "name": "Pianeta del giorno della settimana → il suo organo",
+      "about": "Ogni giorno porta il nome di un pianeta, e ogni pianeta ha il suo organo.",
+      "source": "Rudolf Steiner, Fisiologia occulta (GA 128, 1911)", "when": { "kind": "planetary-hour" },
+      "effect": { "zonesFrom": ["dayRuler"], "weight": 0.3, "quality": "flow" },
+      "text": "Giorno di {dayRuler}: il suo organo" },
+    { "id": "retrograde-organ", "name": "Pianeta retrogrado → il suo organo si ritira",
+      "about": "L'organo segue il moto del suo pianeta.",
+      "source": "Rudolf Steiner, GA 128; Paracelso, Opus paramirum", "when": { "kind": "retrograde" },
+      "effect": { "zonesFrom": ["body"], "weight": 0.4, "quality": "inward" },
+      "text": "{body} retrogrado: il suo organo si ritira" },
+    { "id": "station-organ", "name": "Pianeta stazionario → il suo organo sotto pressione",
+      "about": "Nel punto di svolta del pianeta il suo organo è sotto pressione.",
+      "source": "Rudolf Steiner, GA 128", "when": { "kind": "station", "minIntensity": 0.2 },
+      "effect": { "zonesFrom": ["body"], "weight": 0.5, "quality": "pressure" },
+      "text": "{body} stazionario: il suo organo è sotto pressione" }
+  ]
+}

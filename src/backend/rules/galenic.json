@@ -1,0 +1,118 @@
+{
+  // School: Hippocratic and Galenic medicine. The four humours moved by the season, age and the qualities of the
+  // weather, without the planets (the astrological medicine of Melotesia borrowed this frame later).
+  // Zones: Dendera.Core/Rules/BodyZones.cs.
+  "id": "galenic",
+  "version": "1.1.0",
+  "name": "Medicina galenica",
+  "icon": "school-galenic",
+  "lineage": "galenic",
+  "parents": [],
+  "tradition": "Medicina ippocratica e galenica: i quattro umori",
+  "description": "Quattro umori fanno il temperamento: il sangue (caldo e umido), la bile gialla (calda e secca), la bile nera (fredda e secca), il flegma (freddo e umido). Ogni stagione e ogni età della vita fa prevalere il suo umore, e il clima che si respira lo nutre con le sue qualità. Un umore in eccesso pesa sui suoi organi.",
+  "references": [
+    "Ippocrate, La natura dell'uomo (V sec. a.C.), cap. 7: le stagioni e gli umori",
+    "Ippocrate, Arie, acque, luoghi: il clima e la salute",
+    "Galeno, De temperamentis (II sec.): caldo, freddo, secco, umido",
+    "Avicenna, Canone (1025), libro I, fen 1, dottrina 3: le età della vita e i loro temperamenti",
+    "Tolomeo, Tetrabiblos I.10: i quattro quadranti dell'anno dai punti equinoziali e solstiziali"
+  ],
+  "requires": ["ephemeris", "life-times", "open-meteo", "decumbiture"],
+  "baseline": "none",
+  "natalAmplification": 0,
+  "saturation": 2.5,
+
+  "rules": [
+    {
+      // Hippocratic critical days (Prognostic 20): the 4th, 7th, 11th, 14th, 17th and 20th day of an illness decide
+      // its course. Weight: convention.
+      "id": "critical-day",
+      "name": "Giorno critico del malessere → vitalità",
+      "about": "Il 4°, 7°, 11°, 14°, 17° e 20° giorno decidono il corso di una malattia acuta.",
+      "source": "Ippocrate, Prognostico, cap. 20",
+      "when": { "kind": "illness-day", "tags": { "critical": ["true"] } },
+      "effect": { "zones": ["vitality"], "weight": 0.8, "quality": "tension" },
+      "text": "{day}° giorno del malessere: giorno critico secondo Ippocrate"
+    },
+    // Seasons (Nature of Man 7): blood in spring, yellow bile in summer, black bile in autumn, phlegm in winter;
+    // quadrants from the equinoxes and solstices (Tetrabiblos I.10), i.e. the Sun's tropical sign. Weight: convention.
+    { "id": "spring-blood", "name": "Primavera → sangue",
+      "about": "La primavera, calda e umida, fa prevalere il sangue.",
+      "source": "Ippocrate, La natura dell'uomo, cap. 7", "when": { "kind": "placement", "tags": { "body": ["sun"], "sign": ["aries", "taurus", "gemini"] } },
+      "effect": { "zones": ["sanguine"], "weight": 0.6, "quality": "flow" }, "text": "Primavera: prevale il sangue" },
+    { "id": "summer-yellow-bile", "name": "Estate → bile gialla",
+      "about": "L'estate, calda e secca, fa prevalere la bile gialla.",
+      "source": "Ippocrate, La natura dell'uomo, cap. 7", "when": { "kind": "placement", "tags": { "body": ["sun"], "sign": ["cancer", "leo", "virgo"] } },
+      "effect": { "zones": ["choleric"], "weight": 0.6, "quality": "flow" }, "text": "Estate: prevale la bile gialla" },
+    { "id": "autumn-black-bile", "name": "Autunno → bile nera",
+      "about": "L'autunno, freddo e secco, fa prevalere la bile nera.",
+      "source": "Ippocrate, La natura dell'uomo, cap. 7", "when": { "kind": "placement", "tags": { "body": ["sun"], "sign": ["libra", "scorpio", "sagittarius"] } },
+      "effect": { "zones": ["melancholic"], "weight": 0.6, "quality": "flow" }, "text": "Autunno: prevale la bile nera" },
+    { "id": "winter-phlegm", "name": "Inverno → flegma",
+      "about": "L'inverno, freddo e umido, fa prevalere il flegma.",
+      "source": "Ippocrate, La natura dell'uomo, cap. 7", "when": { "kind": "placement", "tags": { "body": ["sun"], "sign": ["capricorn", "aquarius", "pisces"] } },
+      "effect": { "zones": ["phlegmatic"], "weight": 0.6, "quality": "flow" }, "text": "Inverno: prevale il flegma" },
+
+    // Ages (Avicenna, Canon I.1.3: growth hot and moist until ~30, prime hot and dry until ~40, decline cold and
+    // dry until ~60, old age cold and moist), on septennials 0–28, 28–42, 42–63, 63+. Weight: convention.
+    { "id": "age-blood", "name": "Giovinezza → sangue",
+      "about": "Fino ai trent'anni circa il temperamento è caldo e umido.",
+      "source": "Avicenna, Canone, I.1.3", "when": { "kind": "septennial", "tags": { "septennial": ["1", "2", "3", "4"] } },
+      "effect": { "zones": ["sanguine"], "weight": 0.3, "quality": "flow" }, "text": "Età della crescita: sangue" },
+    { "id": "age-yellow-bile", "name": "Maturità piena → bile gialla",
+      "about": "Dai trenta ai quaranta circa, caldo e secco.",
+      "source": "Avicenna, Canone, I.1.3", "when": { "kind": "septennial", "tags": { "septennial": ["5", "6"] } },
+      "effect": { "zones": ["choleric"], "weight": 0.3, "quality": "flow" }, "text": "Età della maturità piena: bile gialla" },
+    { "id": "age-black-bile", "name": "Età del declino → bile nera",
+      "about": "Dai quaranta ai sessanta circa, freddo e secco.",
+      "source": "Avicenna, Canone, I.1.3", "when": { "kind": "septennial", "tags": { "septennial": ["7", "8", "9"] } },
+      "effect": { "zones": ["melancholic"], "weight": 0.3, "quality": "flow" }, "text": "Età del declino: bile nera" },
+    { "id": "age-phlegm", "name": "Vecchiaia → flegma",
+      "about": "Dopo i sessanta, freddo e umido.",
+      "source": "Avicenna, Canone, I.1.3", "when": { "kind": "septennial", "tags": { "septennial": ["10", "11", "12", "13", "14", "15", "16"] } },
+      "effect": { "zones": ["phlegmatic"], "weight": 0.3, "quality": "flow" }, "text": "Vecchiaia: flegma" },
+
+    // Qualities of the air (Galen, De temperamentis; Airs, Waters, Places): hot moist → blood, hot dry → yellow
+    // bile, cold dry → black bile, cold moist → phlegm. Single qualities split between their two humours.
+    // Weights: convention.
+    { "id": "heat", "name": "Caldo → bile gialla",
+      "about": "L'aria calda nutre l'umore caldo e secco.",
+      "source": "Galeno, De temperamentis; Ippocrate, Arie, acque, luoghi", "when": { "kind": "temperature", "tags": { "level": ["heat"] }, "minIntensity": 0.1 },
+      "effect": { "zones": ["choleric"], "weight": 0.4, "quality": "agitation" }, "text": "Caldo ({detail}): bile gialla" },
+    { "id": "cold", "name": "Freddo → flegma e bile nera",
+      "about": "L'aria fredda nutre gli umori freddi.",
+      "source": "Galeno, De temperamentis", "when": { "kind": "temperature", "tags": { "level": ["cold"] }, "minIntensity": 0.1 },
+      "effect": { "zones": ["phlegmatic", "melancholic"], "weight": 0.3, "quality": "pressure" }, "text": "Freddo ({detail}): flegma e bile nera" },
+    { "id": "dry", "name": "Aria secca → bile nera e gialla",
+      "about": "L'aria secca nutre gli umori secchi.",
+      "source": "Galeno, De temperamentis", "when": { "kind": "dryness", "minIntensity": 0.2 },
+      "effect": { "zones": ["melancholic", "choleric"], "weight": 0.3, "quality": "pressure" }, "text": "Aria secca ({detail})" },
+    { "id": "moist", "name": "Aria umida → flegma e sangue",
+      "about": "L'aria umida nutre gli umori umidi.",
+      "source": "Galeno, De temperamentis", "when": { "kind": "humidity", "minIntensity": 0.3 },
+      "effect": { "zones": ["phlegmatic", "sanguine"], "weight": 0.3, "quality": "pressure" }, "text": "Aria umida ({detail})" },
+    { "id": "muggy", "name": "Caldo umido → sangue",
+      "about": "Caldo e umido insieme sono la qualità del sangue.",
+      "source": "Galeno, De temperamentis", "when": { "kind": "muggy" },
+      "effect": { "zones": ["sanguine"], "weight": 0.4, "quality": "pressure" }, "text": "Caldo umido ({detail}): sangue" },
+
+    // Humours in excess on their organs (Galen): blood the heart and veins, yellow bile the liver and gall,
+    // black bile the spleen (here stomach and spleen) and the mood, phlegm the brain and the lungs.
+    { "id": "blood-organs", "name": "Sangue abbondante → cuore, vasi",
+      "about": "Il sangue in eccesso pesa sul cuore e sui vasi.",
+      "source": "Galeno, sugli umori e i loro organi", "when": { "kind": "node", "tags": { "node": ["sanguine"] }, "minIntensity": 0.2 },
+      "effect": { "zones": ["heart", "circulation"], "weight": 0.4 }, "text": "Sangue abbondante ({detail})" },
+    { "id": "yellow-bile-organs", "name": "Bile gialla abbondante → fegato",
+      "about": "La bile gialla nasce dal fegato e vi ristagna.",
+      "source": "Galeno", "when": { "kind": "node", "tags": { "node": ["choleric"] }, "minIntensity": 0.2 },
+      "effect": { "zones": ["liver"], "weight": 0.4 }, "text": "Bile gialla abbondante ({detail})" },
+    { "id": "black-bile-organs", "name": "Bile nera abbondante → milza, umore",
+      "about": "La bile nera ha sede nella milza e oscura l'umore.",
+      "source": "Galeno; Rufo di Efeso, Sulla melanconia", "when": { "kind": "node", "tags": { "node": ["melancholic"] }, "minIntensity": 0.2 },
+      "effect": { "zones": ["stomach", "mood"], "weight": 0.4 }, "text": "Bile nera abbondante ({detail})" },
+    { "id": "phlegm-organs", "name": "Flegma abbondante → cervello, polmoni",
+      "about": "Il flegma ha sede nel cervello e scende nel petto.",
+      "source": "Galeno", "when": { "kind": "node", "tags": { "node": ["phlegmatic"] }, "minIntensity": 0.2 },
+      "effect": { "zones": ["brain", "lungs"], "weight": 0.4 }, "text": "Flegma abbondante ({detail})" }
+  ]
+}

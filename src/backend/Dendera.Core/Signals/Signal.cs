@@ -37,6 +37,26 @@ public static class SignalKinds
     public const string Retrograde = "retrograde";
     public const string Station = "station";
     public const string SlowMotion = "slow-motion";
+    public const string Decan = "decan";
+    public const string FixedStar = "fixed-star";
+    public const string PlanetaryHour = "planetary-hour";
+    public const string LunarMansion = "lunar-mansion";
+    public const string Nakshatra = "nakshatra";
+    public const string Septennial = "septennial";
+    public const string Profection = "profection";
+    public const string Dasha = "dasha";
+    public const string Ganzhi = "ganzhi";
+    public const string Dignity = "dignity";
+    public const string SolarHour = "solar-hour";
+    public const string SiderealPlacement = "sidereal-placement";
+    public const string SolarWind = "solar-wind";
+    public const string ImfBz = "imf-bz";
+    public const string XrayFlare = "xray-flare";
+    public const string AirQuality = "air-quality";
+    public const string Pollen = "pollen";
+    public const string Uv = "uv";
+    public const string DecumbitureMoon = "decumbiture-moon";
+    public const string IllnessDay = "illness-day";
     public const string RetrogradeCount = "retrograde-count";
     public const string SkyAspect = "sky-aspect";
     public const string TransitAspect = "transit-aspect";
@@ -77,7 +97,8 @@ public sealed record SignalQuery(
     double Latitude,
     double Longitude,
     NatalChart? Natal = null,
-    TimeSpan Step = default)
+    TimeSpan Step = default,
+    IReadOnlyList<DateTimeOffset>? IllnessOnsets = null)
 {
     public IEnumerable<DateTimeOffset> Frames()
     {

@@ -43,14 +43,15 @@ public static class ReadingEngine
         NatalBaselines? baselines,
         IReadOnlyList<BodyPosition> sky,
         NatalChart? natal,
-        IReadOnlyList<Signal> signals) =>
+        IReadOnlyList<Signal> signals,
+        ConsensusMode consensus = ConsensusMode.Plain) =>
         new(
             at,
             schools.Select(s => s.Id).ToList(),
             ChartCalculator.PlaceSky(sky, natal?.Cusps),
             natal,
             signals.OrderByDescending(s => s.Intensity).ToList(),
-            SchoolEngine.Evaluate(schools, signals, baselines));
+            SchoolEngine.Evaluate(schools, signals, baselines, consensus));
 
     /// <summary>
     /// Builds tracks from samples. <paramref name="frames"/> are the instants where zones are evaluated;
@@ -65,9 +66,11 @@ public static class ReadingEngine
         NatalBaselines? baselines,
         IReadOnlyList<Signal> allSamples,
         IReadOnlyList<DateTimeOffset> frames,
-        Func<DateTimeOffset, IReadOnlyList<Signal>> activeAt)
+        Func<DateTimeOffset, IReadOnlyList<Signal>> activeAt,
+        ConsensusMode consensus = ConsensusMode.Plain)
     {
-        var signalTracks = ToTracks(allSamples.Where(s => s.Kind != SignalKinds.Placement));
+        // Placements and decans are positions (shown on the wheel), not tracks.
+        var signalTracks = ToTracks(allSamples.Where(s => s.Kind is not (SignalKinds.Placement or SignalKinds.Decan or SignalKinds.SiderealPlacement or SignalKinds.SolarHour)));
 
         var tracks = new Dictionary<string, (string source, string label, Dictionary<string, string> tags, List<SignalSample> samples)>();
         void Add(string key, string source, string label, Dictionary<string, string> tags, SignalSample sample)
@@ -82,7 +85,7 @@ public static class ReadingEngine
         foreach (var frame in frames)
         {
             var each = SchoolEngine.EvaluateEach(schools, activeAt(frame), baselines);
-            foreach (var z in SchoolEngine.Combine(schools, each))
+            foreach (var z in SchoolEngine.Combine(schools, each, consensus))
                 Add($"zone:{z.Zone}", CombinedSource, z.Label, Tags(z), new SignalSample(frame, z.Score, z.Raw, z.DominantQuality ?? ""));
 
             if (!perSchoolTracks) continue;

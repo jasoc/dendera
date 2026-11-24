@@ -22,7 +22,7 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { PlacedPoint, Signal, ZoneActivation } from '../../core/models';
 import { qualityHex } from '../../core/symbols';
-import { BOUNDS, bodyGlsl, samplePointsInside } from './body-shape';
+import { BOUNDS, GROUPS, Group, Motion, STILL, Vec3, animate, bodyGlsl, groupAt, motionAt, motionGlsl, samplePointsInside } from './body-shape';
 import { ANCHORS_3D, LAYER_STYLE } from './anchors-3d';
 import { Beam, Sky3d } from './sky-3d';
 import { NADI_COLOR, meridianPaths, nadiPaths } from './channels-3d';
@@ -32,7 +32,7 @@ const TARGET = new THREE.Vector3(0, 1.0, 0);
 const BODY_DISTANCE = 3.1;
 const SKY_DISTANCE = 12.5;
 
-interface Light { zone: string; label: string; score: number; p: THREE.Vector3 }
+interface Light { zone: string; label: string; score: number; p: THREE.Vector3; base: Vec3; group: Group; slot: number }
 
 /**
  * The body of light: a translucent human figure (raymarched signed distance field, golden rim, energy bands)
@@ -55,24 +55,23 @@ interface Light { zone: string; label: string; score: number; p: THREE.Vector3 }
           <mat-button-toggle value="body">Corpo</mat-button-toggle>
           <mat-button-toggle value="sky">Cielo</mat-button-toggle>
         </mat-button-toggle-group>
-        <p class="hint">trascina per ruotare · rotella per avvicinarti o vedere il cielo · tocca una luce</p>
       </div>
     } @else {
       <ng-content />
     }
   `,
   styles: `
-    :host { display: block; }
-    .stage { position: relative; height: clamp(440px, 68vh, 760px); border-radius: 20px; overflow: hidden;
-      background: radial-gradient(circle at 50% 40%, #1a1433, #0b0918 70%); }
+    :host { display: block; height: 100%; }
+    .stage { position: relative; height: 100%; min-height: 320px; overflow: hidden;
+      background: radial-gradient(circle at 50% 40%, #0c2236, #050b14 70%); }
     canvas { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
     canvas:active { cursor: grabbing; }
     .tip { position: absolute; transform: translate(-50%, -140%); pointer-events: none; white-space: nowrap;
       font-size: 12px; padding: 4px 10px; border-radius: 999px; color: var(--text);
       background: color-mix(in srgb, var(--mat-sys-surface-container-highest) 85%, transparent); backdrop-filter: blur(6px); }
-    .view-toggle { position: absolute; top: 12px; right: 12px; }
-    .hint { position: absolute; left: 0; right: 0; bottom: 8px; margin: 0; text-align: center; font-size: 11px;
-      color: color-mix(in srgb, var(--muted) 80%, transparent); pointer-events: none; }
+    .view-toggle { position: absolute; left: 50%; bottom: var(--stage-toggle-bottom, 18px); transform: translateX(-50%);
+      --mat-standard-button-toggle-height: 32px; backdrop-filter: blur(8px);
+      background: color-mix(in srgb, var(--mat-sys-surface-container) 55%, transparent); border-radius: 999px; }
   `,
 })
 export class Body3d implements OnDestroy {
@@ -80,6 +79,8 @@ export class Body3d implements OnDestroy {
   readonly sky = input<PlacedPoint[]>([]);
   readonly signals = input<Signal[]>([]);
   readonly selected = input<string | null>(null);
+  /** Layers whose lights are shown and pickable (null = all): picking an emotion over an organ gets easy. */
+  readonly layers = input<string[] | null>(null);
   readonly pick = output<string>();
 
   protected readonly webgl = signal(true);
@@ -97,11 +98,13 @@ export class Body3d implements OnDestroy {
   private particles?: THREE.Points;
   private particleBase?: Float32Array;
   private sky3d?: Sky3d;
-  private channels: { zone: string; line: Line2; material: LineMaterial }[] = [];
+  private channels: { zone: string; line: Line2; material: LineMaterial; base: Vec3[]; groups: Group[] }[] = [];
   private lights: Light[] = [];
   private raf = 0;
   private resize?: ResizeObserver;
   private flyTo: number | null = null;
+  /** When the user last let go: after a while the camera sways gently, like someone walking past a statue. */
+  private idleSince = 0;
   private readonly clock = new THREE.Clock();
   private readonly reducedMotion = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -112,6 +115,7 @@ export class Body3d implements OnDestroy {
       const selected = this.selected();
       const sky = this.sky();
       const signals = this.signals();
+      this.layers();
       if (this.bodyMaterial) this.updateScene(zones, selected, sky, signals);
     });
   }
@@ -133,22 +137,26 @@ export class Body3d implements OnDestroy {
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color('#0b0918');
+    scene.background = new THREE.Color('#050b14');
     this.camera = new THREE.PerspectiveCamera(35, 1, 0.05, 100);
-    this.camera.position.set(0.25, 1.15, BODY_DISTANCE);
+    this.camera.position.set(0.12, 1.12, BODY_DISTANCE);
 
     const controls = (this.controls = new OrbitControls(this.camera, canvas));
     controls.target.copy(TARGET);
     controls.enableDamping = true;
     controls.enablePan = false;
-    controls.minDistance = 1.1;
+    // Free to walk around the figure; it turns slowly by itself when left alone. Zoom out for the sky.
+    controls.minDistance = 1.3;
     controls.maxDistance = 17;
-    controls.autoRotate = !this.reducedMotion;
-    controls.autoRotateSpeed = 0.55;
+    controls.minPolarAngle = 0.9;
+    controls.maxPolarAngle = 2.1;
+    controls.rotateSpeed = 0.6;
+    controls.autoRotateSpeed = 0.35;
     controls.addEventListener('start', () => {
       this.flyTo = null;
-      controls.autoRotate = false;
+      this.idleSince = Number.POSITIVE_INFINITY;
     });
+    controls.addEventListener('end', () => (this.idleSince = this.clock.getElapsedTime()));
 
     scene.add(this.makeStars(), this.makeMandala(), this.makeBody(), (this.particles = this.makeParticles()), this.makeChannels());
     this.sky3d = new Sky3d();
@@ -195,8 +203,10 @@ export class Body3d implements OnDestroy {
         uPos: { value: Array.from({ length: MAX_LIGHTS }, () => new THREE.Vector4()) },
         uCol: { value: Array.from({ length: MAX_LIGHTS }, () => new THREE.Vector4()) },
         uMeta: { value: Array.from({ length: MAX_LIGHTS }, () => new THREE.Vector4()) },
-        uAuraColor: { value: new THREE.Color('#d6a84c') },
+        uAuraColor: { value: new THREE.Color('#45d4ff') },
         uAura: { value: 0 },
+        uMotion: { value: new THREE.Vector4() },
+        uMotion2: { value: new THREE.Vector3() },
         uBoxMin: { value: boxMin },
         uBoxMax: { value: boxMax },
       },
@@ -238,8 +248,9 @@ export class Body3d implements OnDestroy {
             if (t > tb.y) break;
           }
 
-          vec3 gold = vec3(1.0, 0.76, 0.40);
-          vec3 violet = vec3(0.50, 0.42, 1.0);
+          // hologram palette: cyan rim, deep blue body, white-cyan scan lines (names kept from the old palette)
+          vec3 gold = vec3(0.32, 0.86, 1.0);
+          vec3 violet = vec3(0.10, 0.24, 0.75);
           vec3 col = vec3(0.0);
 
           if (hit) {
@@ -247,7 +258,8 @@ export class Body3d implements OnDestroy {
             vec3 n = normalAt(p);
             float fr = pow(1.0 - max(dot(n, -rd), 0.0), 2.3);
             // skin of light: violet where it faces you, gold at the silhouette, slow energy rising through it
-            float bands = smoothstep(0.93, 1.0, fract(p.y * 7.0 - uTime * 0.09)) * 0.5;
+            float bands = smoothstep(0.93, 1.0, fract(p.y * 7.0 - uTime * 0.09)) * 0.5
+              + smoothstep(0.6, 1.0, fract(p.y * 90.0 - uTime * 0.6)) * 0.12;
             col += mix(violet * 0.06, gold * 0.7, fr) + gold * bands * (0.08 + 0.6 * fr);
             // the organs light the skin from inside
             vec3 inner = vec3(0.0);
@@ -304,6 +316,7 @@ export class Body3d implements OnDestroy {
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(pts.flat(), 3));
     geo.setAttribute('seed', new THREE.Float32BufferAttribute(pts.map((_, i) => (i * 0.61803) % 1), 1));
+    geo.setAttribute('group', new THREE.Float32BufferAttribute(pts.map((q) => GROUPS.indexOf(groupAt(q))), 1));
     this.particleBase = new Float32Array(pts.length * 3).fill(0.9);
     geo.setAttribute('color', new THREE.BufferAttribute(this.particleBase.slice(), 3));
     const mat = new THREE.ShaderMaterial({
@@ -311,11 +324,12 @@ export class Body3d implements OnDestroy {
       depthWrite: false,
       blending: THREE.AdditiveBlending,
       vertexColors: true,
-      uniforms: { uTime: { value: 0 }, uScale: { value: 1 } },
+      uniforms: { uTime: { value: 0 }, uScale: { value: 1 }, uMotion: { value: new THREE.Vector4() }, uMotion2: { value: new THREE.Vector3() } },
       vertexShader: `
-        attribute float seed; varying vec3 vColor; varying float vTw; uniform float uTime; uniform float uScale;
+        ${motionGlsl()}
+        attribute float seed; attribute float group; varying vec3 vColor; varying float vTw; uniform float uTime; uniform float uScale;
         void main() {
-          vec3 p = position;
+          vec3 p = animateFwd(position, group);
           p.y += mod(seed * 0.05 + uTime * 0.012 * (0.5 + seed), 0.05) - 0.025;
           p.x += sin(uTime * 0.7 + seed * 40.0) * 0.004;
           p.z += cos(uTime * 0.6 + seed * 31.0) * 0.004;
@@ -344,7 +358,8 @@ export class Body3d implements OnDestroy {
     for (const { zone, points } of [...meridianPaths(), ...nadiPaths()]) {
       const curve = new THREE.CatmullRomCurve3(points.map((p) => new THREE.Vector3(...p)));
       const geo = new LineGeometry();
-      geo.setPositions(curve.getPoints(90).flatMap((v) => [v.x, v.y, v.z]));
+      const base = curve.getPoints(90).map((v) => [v.x, v.y, v.z] as Vec3);
+      geo.setPositions(base.flat());
       const material = new LineMaterial({
         color: 0xffffff,
         linewidth: NADI_COLOR[zone] ? 2.6 : 1.8,
@@ -357,7 +372,7 @@ export class Body3d implements OnDestroy {
       line.visible = false;
       line.renderOrder = 4;
       group.add(line);
-      this.channels.push({ zone, line, material });
+      this.channels.push({ zone, line, material, base, groups: base.map(groupAt) });
     }
     return group;
   }
@@ -390,7 +405,7 @@ export class Body3d implements OnDestroy {
           float petals = smoothstep(0.7, 1.0, cos(a * 24.0)) * ring(r, 0.5, 0.05);
           float c = ring(r, 0.28, 0.01) + ring(r, 0.62, 0.008) + ring(r, 0.82, 0.006) * 0.8 + rays * 0.35 + petals * 0.25;
           c += exp(-r * 6.0) * 0.25;
-          gl_FragColor = vec4(vec3(1.0, 0.76, 0.42) * c * 0.45 * (1.0 - smoothstep(0.85, 1.0, r)), 1.0);
+          gl_FragColor = vec4(vec3(0.3, 0.85, 1.0) * c * 0.45 * (1.0 - smoothstep(0.85, 1.0, r)), 1.0);
         }`,
     });
     const plane = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 1.7), mat);
@@ -430,7 +445,9 @@ export class Body3d implements OnDestroy {
     let auraWeight = 0;
 
     // Strongest first, so that the MAX_LIGHTS limit drops the faintest.
+    const shown = this.layers();
     for (const z of [...zones].sort((a, b) => b.score - a.score)) {
+      if (shown && !shown.includes(z.layer) && z.zone !== selected) continue;
       const style = LAYER_STYLE[z.layer] ?? LAYER_STYLE.soma;
       const c = new THREE.Color(qualityHex(z.dominantQuality));
       if (z.layer === 'systems' || !ANCHORS_3D[z.zone]) {
@@ -451,7 +468,8 @@ export class Body3d implements OnDestroy {
         const color = quiet ? new THREE.Color('#e8dcc0') : c;
         col[n].set(color.r, color.g, color.b, intensity);
         meta[n].set(style.kind, (n * 1.7) % 6.28, z.zone === selected ? 1 : 0, z.natalBaseline);
-        lights.push({ zone: z.zone, label: `${z.label} · ${Math.round(z.score * 100)}%`, score: z.score, p: new THREE.Vector3(...a.p) });
+        lights.push({ zone: z.zone, label: `${z.label} · ${Math.round(z.score * 100)}%`, score: z.score, p: new THREE.Vector3(...a.p),
+          base: a.p, group: this.groupOf(a.p), slot: n });
         n++;
       }
     }
@@ -477,6 +495,37 @@ export class Body3d implements OnDestroy {
     this.sky3d?.update(sky, signals, beams.slice(0, 40));
   }
 
+  private readonly groupCache = new Map<string, Group>();
+  private groupOf(p: Vec3): Group {
+    const k = p.join(',');
+    let g = this.groupCache.get(k);
+    if (!g) this.groupCache.set(k, (g = groupAt(p)));
+    return g;
+  }
+
+  /** Moves the lights, the channels and (through uniforms) the skin and the particles with the idle animation. */
+  private applyMotion(m: Motion, frame: number) {
+    const mat = this.bodyMaterial;
+    if (!mat) return;
+    for (const u of [mat.uniforms, (this.particles?.material as THREE.ShaderMaterial | undefined)?.uniforms]) {
+      if (!u) continue;
+      (u['uMotion'].value as THREE.Vector4).set(m.swayZ, m.swayX, m.headYaw, m.headPitch);
+      (u['uMotion2'].value as THREE.Vector3).set(m.armL, m.armR, m.breath);
+    }
+    const pos = mat.uniforms['uPos'].value as THREE.Vector4[];
+    for (const l of this.lights) {
+      const q = animate(l.base, l.group, m);
+      l.p.set(q[0], q[1], q[2]);
+      pos[l.slot].set(q[0], q[1], q[2], pos[l.slot].w);
+    }
+    // channels every other frame: they are thin, and rebuilding their geometry is not free
+    if (frame % 2 === 0)
+      for (const c of this.channels)
+        if (c.line.visible) (c.line.geometry as LineGeometry).setPositions(c.base.flatMap((p, i) => animate(p, c.groups[i], m)));
+  }
+
+  private frame = 0;
+
   private tintParticles(lights: Light[], zones: ZoneActivation[]) {
     const pts = this.particles;
     const base = this.particleBase;
@@ -491,7 +540,7 @@ export class Body3d implements OnDestroy {
     const v = new THREE.Vector3();
     for (let i = 0; i < pos.count; i++) {
       v.fromBufferAttribute(pos, i);
-      let r = 0.95, g = 0.82, b = 0.6, sum = 1;
+      let r = 0.55, g = 0.85, b = 1.0, sum = 1;
       for (const t of tint) {
         const k = Math.exp(-v.distanceToSquared(t.p) / 0.012) * t.w * 3;
         r += t.c.r * k; g += t.c.g * k; b += t.c.b * k; sum += k;
@@ -517,6 +566,8 @@ export class Body3d implements OnDestroy {
       camera.position.copy(controls.target).add(dir.setLength(next));
       if (Math.abs(next - this.flyTo) < 0.02) this.flyTo = null;
     }
+    this.applyMotion(this.reducedMotion ? STILL : motionAt(t), this.frame++);
+    controls.autoRotate = !this.reducedMotion && t - this.idleSince > 6;
     controls.update();
 
     const dist = camera.position.distanceTo(controls.target);

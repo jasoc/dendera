@@ -47,12 +47,12 @@ public class BodyModelTests
     {
         // b's liver is activated, but only a has the liver → anger relation: schools stay independent.
         var a = RuleSetJson.Parse("""
-        { "id": "a", "version": "1", "name": "a", "rules": [
+        { "id": "a", "version": "1", "lineage": "modern-science", "name": "a", "rules": [
           { "id": "link", "when": { "kind": "node", "tags": { "node": ["liver"] } }, "effect": { "zones": ["anger"] } },
           { "id": "chain", "when": { "kind": "node", "tags": { "node": ["anger"] } }, "effect": { "zones": ["fear"] } } ] }
         """);
         var b = RuleSetJson.Parse("""
-        { "id": "b", "version": "1", "name": "b", "rules": [
+        { "id": "b", "version": "1", "lineage": "modern-science", "name": "b", "rules": [
           { "id": "r", "when": { "kind": "wind" }, "effect": { "zones": ["liver"] } } ] }
         """);
         var zones = SchoolEngine.Evaluate([a, b], [Sig("wind", SignalKinds.Wind, 1)]);
@@ -60,7 +60,7 @@ public class BodyModelTests
 
         // Inside one school: liver → anger fires, anger → fear does not (one pass, no chains).
         var both = RuleSetJson.Parse("""
-        { "id": "c", "version": "1", "name": "c", "rules": [
+        { "id": "c", "version": "1", "lineage": "modern-science", "name": "c", "rules": [
           { "id": "r", "when": { "kind": "wind" }, "effect": { "zones": ["liver"] } },
           { "id": "link", "when": { "kind": "node", "tags": { "node": ["liver"] } }, "effect": { "zones": ["anger"] } },
           { "id": "chain", "when": { "kind": "node", "tags": { "node": ["anger"] } }, "effect": { "zones": ["fear"] } } ] }
@@ -74,7 +74,7 @@ public class BodyModelTests
     public void Node_rules_on_unknown_nodes_are_rejected()
     {
         Assert.Throws<InvalidDataException>(() => RuleSetJson.Parse("""
-        { "id": "x", "version": "1", "name": "x", "rules": [
+        { "id": "x", "version": "1", "lineage": "modern-science", "name": "x", "rules": [
           { "id": "r", "when": { "kind": "node", "tags": { "node": ["spleen-of-doom"] } }, "effect": { "zones": ["anger"] } } ] }
         """));
     }

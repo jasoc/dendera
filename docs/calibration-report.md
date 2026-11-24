@@ -5,7 +5,7 @@ Method and decisions: `docs/plans/calibration.md`.
 
 ## Reference set
 
-- Reference hash `795d56ef7fd66702`, signals version 1, seed 20261120.
+- Reference hash `e64c1e831b10f94d`, signals version 4, seed 20261120.
 - 500 synthetic births 1930–2010, all hours, latitudes 0–60° N/S (uniform on the sphere), longitudes all around; no personal data.
 - Sky-only schools: 50,000 random instants 1900–2100; the person is placed at the birth place of the chart.
 - Weather schools: 20,000 random 3-hour slots per climate zone, 1991–2020 (WMO climate normal), sky and weather from the same real moment at the reference place.
@@ -42,7 +42,65 @@ Neptune and Pluto are covered only in part by 200 years (accepted). The weather 
 
 Per layer: nodes the school covers; nodes it reaches (raw > 0 in at least 1% of the moments); median share of moments at zero (zero stays zero); stability = difference in rarity, in percentile points, between the tables built on two halves of the reference (even and odd charts, half the instants each) at the 50th, 90th, 95th and 99th percentile of the full table: mean and worst node. Doubling the reference roughly divides it by √2.
 
-### Biometeorologia (`biometeorology` 1.2.0)
+### Ayurveda (`ayurveda` 1.0.0)
+
+Table `af-singapore`, 20,000 samples.
+
+| Layer | Covered | Reached | Median zero share | Stability mean | Stability worst |
+|---|---|---|---|---|---|
+| doshas | 3 | 3 | 7% | 1.2 | 1.6 (kapha) |
+| soma | 7 | 7 | 66% | 1.3 | 1.6 (head) |
+| systems | 4 | 4 | 72% | 1.0 | 1.0 (circulation) |
+
+Table `bsk-madrid`, 20,000 samples.
+
+| Layer | Covered | Reached | Median zero share | Stability mean | Stability worst |
+|---|---|---|---|---|---|
+| doshas | 3 | 3 | 15% | 0.9 | 1.0 (pitta) |
+| soma | 7 | 7 | 67% | 0.3 | 0.4 (eyes) |
+| systems | 4 | 4 | 71% | 0.3 | 0.4 (circulation) |
+
+Table `bwh-cairo`, 20,000 samples.
+
+| Layer | Covered | Reached | Median zero share | Stability mean | Stability worst |
+|---|---|---|---|---|---|
+| doshas | 3 | 3 | 19% | 0.8 | 1.0 (pitta) |
+| soma | 7 | 7 | 68% | 0.5 | 0.7 (head) |
+| systems | 4 | 4 | 66% | 0.3 | 0.4 (circulation) |
+
+Table `cfa-milano`, 20,000 samples.
+
+| Layer | Covered | Reached | Median zero share | Stability mean | Stability worst |
+|---|---|---|---|---|---|
+| doshas | 3 | 3 | 15% | 0.4 | 1.0 (pitta) |
+| soma | 7 | 7 | 76% | 0.1 | 0.1 (head) |
+| systems | 4 | 4 | 77% | 0.0 | 0.0 (nervous-system) |
+
+Table `cfb-london`, 20,000 samples.
+
+| Layer | Covered | Reached | Median zero share | Stability mean | Stability worst |
+|---|---|---|---|---|---|
+| doshas | 3 | 3 | 11% | 0.9 | 1.0 (vata) |
+| soma | 7 | 7 | 66% | 0.5 | 1.0 (ears) |
+| systems | 4 | 4 | 73% | 0.5 | 1.0 (nervous-system) |
+
+Table `csa-palermo`, 20,000 samples.
+
+| Layer | Covered | Reached | Median zero share | Stability mean | Stability worst |
+|---|---|---|---|---|---|
+| doshas | 3 | 3 | 15% | 0.7 | 1.0 (pitta) |
+| soma | 7 | 7 | 74% | 0.6 | 1.0 (eyes) |
+| systems | 4 | 4 | 75% | 1.0 | 1.0 (circulation) |
+
+Table `dfb-warszawa`, 20,000 samples.
+
+| Layer | Covered | Reached | Median zero share | Stability mean | Stability worst |
+|---|---|---|---|---|---|
+| doshas | 3 | 3 | 10% | 0.3 | 0.6 (kapha) |
+| soma | 7 | 7 | 72% | 0.3 | 0.6 (head) |
+| systems | 4 | 4 | 73% | 0.1 | 0.2 (nervous-system) |
+
+### Biometeorologia (`biometeorology` 1.3.0)
 
 Table `af-singapore`, 20,000 samples.
 
@@ -50,8 +108,8 @@ Table `af-singapore`, 20,000 samples.
 |---|---|---|---|---|---|
 | emotions | 1 | 1 | 97% | 0.0 | 0.0 (fear) |
 | mind | 1 | 1 | 0% | 0.5 | 0.5 (mood) |
-| soma | 3 | 2 | 97% | 0.1 | 0.2 (head) |
-| systems | 6 | 5 | 4% | 0.1 | 0.4 (vitality) |
+| soma | 6 | 2 | 100% | 0.0 | 0.2 (head) |
+| systems | 7 | 5 | 4% | 0.1 | 0.4 (vitality) |
 | temperament | 1 | 1 | 0% | 0.5 | 0.5 (melancholic) |
 
 Table `bsk-madrid`, 20,000 samples.
@@ -60,8 +118,8 @@ Table `bsk-madrid`, 20,000 samples.
 |---|---|---|---|---|---|
 | emotions | 1 | 1 | 96% | 0.0 | 0.0 (fear) |
 | mind | 1 | 1 | 50% | 0.7 | 0.7 (mood) |
-| soma | 3 | 3 | 90% | 0.2 | 0.3 (head) |
-| systems | 6 | 6 | 62% | 0.5 | 1.0 (vitality) |
+| soma | 6 | 3 | 98% | 0.1 | 0.3 (head) |
+| systems | 7 | 6 | 64% | 0.4 | 1.0 (vitality) |
 | temperament | 1 | 1 | 50% | 0.7 | 0.7 (melancholic) |
 
 Table `bwh-cairo`, 20,000 samples.
@@ -70,8 +128,8 @@ Table `bwh-cairo`, 20,000 samples.
 |---|---|---|---|---|---|
 | emotions | 1 | 1 | 96% | 0.0 | 0.0 (fear) |
 | mind | 1 | 1 | 48% | 1.1 | 1.1 (mood) |
-| soma | 3 | 3 | 96% | 0.3 | 0.7 (head) |
-| systems | 6 | 6 | 72% | 0.4 | 1.3 (sleep) |
+| soma | 6 | 3 | 98% | 0.1 | 0.7 (head) |
+| systems | 7 | 6 | 73% | 0.3 | 1.3 (sleep) |
 | temperament | 1 | 1 | 48% | 1.1 | 1.1 (melancholic) |
 
 Table `cfa-milano`, 20,000 samples.
@@ -80,8 +138,8 @@ Table `cfa-milano`, 20,000 samples.
 |---|---|---|---|---|---|
 | emotions | 1 | 1 | 97% | 0.0 | 0.0 (fear) |
 | mind | 1 | 1 | 50% | 0.2 | 0.2 (mood) |
-| soma | 3 | 3 | 87% | 0.2 | 0.3 (knees) |
-| systems | 6 | 6 | 42% | 0.3 | 1.0 (lymph) |
+| soma | 6 | 3 | 98% | 0.1 | 0.3 (knees) |
+| systems | 7 | 6 | 43% | 0.3 | 1.0 (lymph) |
 | temperament | 1 | 1 | 50% | 0.2 | 0.2 (melancholic) |
 
 Table `cfb-london`, 20,000 samples.
@@ -90,8 +148,8 @@ Table `cfb-london`, 20,000 samples.
 |---|---|---|---|---|---|
 | emotions | 1 | 1 | 96% | 0.0 | 0.0 (fear) |
 | mind | 1 | 1 | 51% | 0.5 | 0.5 (mood) |
-| soma | 3 | 3 | 78% | 0.2 | 0.4 (knees) |
-| systems | 6 | 6 | 34% | 0.5 | 1.0 (lymph) |
+| soma | 6 | 3 | 98% | 0.1 | 0.4 (knees) |
+| systems | 7 | 6 | 41% | 0.4 | 1.0 (lymph) |
 | temperament | 1 | 1 | 51% | 0.5 | 0.5 (melancholic) |
 
 Table `csa-palermo`, 20,000 samples.
@@ -100,8 +158,8 @@ Table `csa-palermo`, 20,000 samples.
 |---|---|---|---|---|---|
 | emotions | 1 | 1 | 96% | 0.0 | 0.0 (fear) |
 | mind | 1 | 1 | 49% | 0.5 | 0.5 (mood) |
-| soma | 3 | 3 | 92% | 0.1 | 0.3 (head) |
-| systems | 6 | 6 | 42% | 0.5 | 1.0 (lymph) |
+| soma | 6 | 3 | 98% | 0.1 | 0.3 (head) |
+| systems | 7 | 6 | 45% | 0.5 | 1.0 (lymph) |
 | temperament | 1 | 1 | 49% | 0.5 | 0.5 (melancholic) |
 
 Table `dfb-warszawa`, 20,000 samples.
@@ -110,9 +168,83 @@ Table `dfb-warszawa`, 20,000 samples.
 |---|---|---|---|---|---|
 | emotions | 1 | 1 | 97% | 0.1 | 0.1 (fear) |
 | mind | 1 | 1 | 51% | 0.7 | 0.7 (mood) |
-| soma | 3 | 3 | 81% | 0.2 | 0.3 (knees) |
-| systems | 6 | 6 | 36% | 0.4 | 1.0 (skeleton) |
+| soma | 6 | 3 | 98% | 0.1 | 0.3 (knees) |
+| systems | 7 | 6 | 38% | 0.4 | 1.0 (skeleton) |
 | temperament | 1 | 1 | 51% | 0.7 | 0.7 (melancholic) |
+
+### Cronobiologia (`chronobiology` 1.0.0)
+
+Table `global`, 50,000 samples.
+
+| Layer | Covered | Reached | Median zero share | Stability mean | Stability worst |
+|---|---|---|---|---|---|
+| mind | 2 | 2 | 64% | 0.2 | 0.4 (mood) |
+| systems | 2 | 2 | 22% | 0.4 | 0.5 (sleep) |
+
+### Medicina galenica (`galenic` 1.1.0)
+
+Table `af-singapore`, 20,000 samples.
+
+| Layer | Covered | Reached | Median zero share | Stability mean | Stability worst |
+|---|---|---|---|---|---|
+| mind | 1 | 1 | 75% | 1.0 | 1.0 (mood) |
+| soma | 5 | 5 | 75% | 0.3 | 1.0 (stomach) |
+| systems | 2 | 1 | 83% | 0.1 | 0.2 (circulation) |
+| temperament | 4 | 4 | 22% | 0.6 | 1.0 (choleric) |
+
+Table `bsk-madrid`, 20,000 samples.
+
+| Layer | Covered | Reached | Median zero share | Stability mean | Stability worst |
+|---|---|---|---|---|---|
+| mind | 1 | 1 | 74% | 0.6 | 0.6 (mood) |
+| soma | 5 | 5 | 74% | 0.2 | 0.6 (stomach) |
+| systems | 2 | 1 | 87% | 0.0 | 0.1 (circulation) |
+| temperament | 4 | 4 | 37% | 0.5 | 1.0 (melancholic) |
+
+Table `bwh-cairo`, 20,000 samples.
+
+| Layer | Covered | Reached | Median zero share | Stability mean | Stability worst |
+|---|---|---|---|---|---|
+| mind | 1 | 1 | 73% | 0.3 | 0.3 (mood) |
+| soma | 5 | 5 | 74% | 0.7 | 1.0 (heart) |
+| systems | 2 | 1 | 87% | 0.5 | 1.0 (circulation) |
+| temperament | 4 | 4 | 37% | 0.9 | 1.0 (sanguine) |
+
+Table `cfa-milano`, 20,000 samples.
+
+| Layer | Covered | Reached | Median zero share | Stability mean | Stability worst |
+|---|---|---|---|---|---|
+| mind | 1 | 1 | 75% | 0.1 | 0.1 (mood) |
+| soma | 5 | 5 | 73% | 0.5 | 1.0 (heart) |
+| systems | 2 | 1 | 86% | 0.5 | 1.0 (circulation) |
+| temperament | 4 | 4 | 30% | 1.1 | 1.5 (melancholic) |
+
+Table `cfb-london`, 20,000 samples.
+
+| Layer | Covered | Reached | Median zero share | Stability mean | Stability worst |
+|---|---|---|---|---|---|
+| mind | 1 | 1 | 76% | 0.1 | 0.1 (mood) |
+| soma | 5 | 5 | 73% | 0.1 | 0.2 (brain) |
+| systems | 2 | 1 | 86% | 0.1 | 0.2 (circulation) |
+| temperament | 4 | 4 | 27% | 0.4 | 1.0 (phlegmatic) |
+
+Table `csa-palermo`, 20,000 samples.
+
+| Layer | Covered | Reached | Median zero share | Stability mean | Stability worst |
+|---|---|---|---|---|---|
+| mind | 1 | 1 | 75% | 1.0 | 1.0 (mood) |
+| soma | 5 | 5 | 75% | 0.4 | 1.0 (stomach) |
+| systems | 2 | 1 | 87% | 0.0 | 0.0 (circulation) |
+| temperament | 4 | 4 | 40% | 0.4 | 1.0 (melancholic) |
+
+Table `dfb-warszawa`, 20,000 samples.
+
+| Layer | Covered | Reached | Median zero share | Stability mean | Stability worst |
+|---|---|---|---|---|---|
+| mind | 1 | 1 | 74% | 1.0 | 1.0 (mood) |
+| soma | 5 | 5 | 73% | 0.9 | 1.0 (heart) |
+| systems | 2 | 1 | 86% | 0.5 | 1.0 (circulation) |
+| temperament | 4 | 4 | 26% | 0.9 | 1.0 (sanguine) |
 
 ### Human Design (`human-design` 1.2.0)
 
@@ -125,104 +257,144 @@ Table `global`, 50,000 samples.
 | soma | 9 | 9 | 13% | 0.8 | 1.0 (throat) |
 | systems | 3 | 3 | 13% | 1.0 | 1.0 (circulation) |
 
-### Melotesia (`melothesia` 2.3.0)
+### Jyotish (`jyotish` 1.0.0)
 
 Table `global`, 50,000 samples.
 
 | Layer | Covered | Reached | Median zero share | Stability mean | Stability worst |
 |---|---|---|---|---|---|
-| mind | 4 | 4 | 0% | 0.5 | 1.3 (mood) |
-| soma | 20 | 20 | 0% | 1.4 | 3.3 (feet) |
+| doshas | 3 | 3 | 28% | 0.3 | 1.0 (vata) |
+| soma | 14 | 14 | 49% | 0.4 | 1.0 (head) |
+| systems | 5 | 5 | 72% | 0.6 | 1.0 (skeleton) |
+
+### Cabala ermetica (`kabbalah` 1.0.0)
+
+Table `global`, 50,000 samples.
+
+| Layer | Covered | Reached | Median zero share | Stability mean | Stability worst |
+|---|---|---|---|---|---|
+| sephiroth | 8 | 8 | 0% | 0.6 | 1.6 (binah) |
+| soma | 6 | 6 | 9% | 0.8 | 1.2 (brain) |
+
+### Melotesia (`melothesia` 2.6.0)
+
+Table `global`, 50,000 samples.
+
+| Layer | Covered | Reached | Median zero share | Stability mean | Stability worst |
+|---|---|---|---|---|---|
+| mind | 4 | 4 | 0% | 0.4 | 1.3 (mood) |
+| soma | 20 | 20 | 0% | 1.5 | 3.2 (pelvis) |
 | systems | 9 | 9 | 0% | 1.7 | 3.1 (skeleton) |
-| temperament | 4 | 4 | 0% | 0.3 | 0.7 (sanguine) |
+| temperament | 4 | 4 | 0% | 0.6 | 1.1 (sanguine) |
 
-### Yoga tantrico (`tantric-yoga` 1.0.0)
+### Antroposofia (Steiner e Paracelso) (`steiner` 1.0.0)
 
 Table `global`, 50,000 samples.
 
 | Layer | Covered | Reached | Median zero share | Stability mean | Stability worst |
 |---|---|---|---|---|---|
-| chakras | 7 | 7 | 2% | 0.3 | 0.4 (anahata) |
-| mind | 1 | 1 | 12% | 0.2 | 0.2 (imagination) |
-| nadis | 3 | 3 | 0% | 0.2 | 0.3 (pingala) |
-| soma | 12 | 12 | 23% | 0.4 | 0.8 (pelvis) |
-| systems | 2 | 2 | 5% | 0.3 | 0.3 (vitality) |
+| members | 4 | 4 | 53% | 0.0 | 0.0 (physical-body) |
+| soma | 7 | 7 | 79% | 0.1 | 0.7 (lungs) |
+| zangfu | 1 | 1 | 77% | 0.3 | 0.3 (zf-gallbladder) |
 
-### Medicina tradizionale cinese (`tcm` 2.1.0)
+### Yoga tantrico (`tantric-yoga` 1.1.0)
+
+Table `global`, 50,000 samples.
+
+| Layer | Covered | Reached | Median zero share | Stability mean | Stability worst |
+|---|---|---|---|---|---|
+| chakras | 7 | 7 | 2% | 0.2 | 0.5 (vishuddha) |
+| mind | 1 | 1 | 10% | 0.2 | 0.2 (imagination) |
+| nadis | 3 | 3 | 0% | 0.2 | 0.3 (pingala) |
+| soma | 12 | 12 | 20% | 0.3 | 1.0 (pelvis) |
+| systems | 2 | 2 | 4% | 0.3 | 0.4 (skeleton) |
+
+### Medicina tradizionale cinese (`tcm` 2.2.0)
 
 Table `af-singapore`, 20,000 samples.
 
 | Layer | Covered | Reached | Median zero share | Stability mean | Stability worst |
 |---|---|---|---|---|---|
-| emotions | 7 | 7 | 80% | 0.7 | 1.0 (pensiveness) |
+| emotions | 7 | 7 | 80% | 0.7 | 1.0 (worry) |
 | soma | 5 | 5 | 80% | 0.5 | 1.0 (ears) |
-| spirits | 5 | 5 | 80% | 0.7 | 1.0 (yi) |
-| substances | 6 | 6 | 28% | 0.6 | 1.2 (jinye) |
-| systems | 5 | 5 | 75% | 0.7 | 1.0 (skeleton) |
-| zangfu | 12 | 12 | 70% | 0.8 | 1.0 (zf-spleen) |
+| spirits | 5 | 5 | 80% | 0.6 | 1.0 (po) |
+| substances | 6 | 6 | 27% | 0.7 | 1.2 (jinye) |
+| systems | 5 | 5 | 74% | 0.8 | 1.0 (skeleton) |
+| zangfu | 12 | 12 | 63% | 0.8 | 2.0 (zf-stomach) |
 
 Table `bsk-madrid`, 20,000 samples.
 
 | Layer | Covered | Reached | Median zero share | Stability mean | Stability worst |
 |---|---|---|---|---|---|
-| emotions | 7 | 7 | 78% | 0.7 | 1.0 (anger) |
-| soma | 5 | 5 | 80% | 0.6 | 1.0 (eyes) |
-| spirits | 5 | 5 | 79% | 0.7 | 1.0 (hun) |
-| substances | 6 | 6 | 47% | 0.5 | 1.0 (yin) |
-| systems | 5 | 5 | 52% | 0.2 | 0.5 (muscles) |
-| zangfu | 12 | 12 | 66% | 0.4 | 1.0 (zf-liver) |
+| emotions | 7 | 7 | 77% | 0.4 | 0.9 (anger) |
+| soma | 5 | 5 | 80% | 0.5 | 0.9 (eyes) |
+| spirits | 5 | 5 | 77% | 0.4 | 0.9 (hun) |
+| substances | 6 | 6 | 46% | 0.5 | 1.0 (yin) |
+| systems | 5 | 5 | 52% | 0.2 | 0.4 (sinews) |
+| zangfu | 12 | 12 | 60% | 0.3 | 1.0 (zf-stomach) |
 
 Table `bwh-cairo`, 20,000 samples.
 
 | Layer | Covered | Reached | Median zero share | Stability mean | Stability worst |
 |---|---|---|---|---|---|
-| emotions | 7 | 7 | 76% | 0.5 | 1.0 (pensiveness) |
-| soma | 5 | 5 | 74% | 0.3 | 0.8 (mouth) |
-| spirits | 5 | 5 | 80% | 0.4 | 1.0 (yi) |
-| substances | 6 | 6 | 45% | 0.4 | 1.0 (yang) |
-| systems | 5 | 5 | 60% | 0.6 | 1.0 (skeleton) |
-| zangfu | 12 | 12 | 68% | 0.8 | 2.0 (zf-small-intestine) |
+| emotions | 7 | 7 | 75% | 0.7 | 1.0 (anger) |
+| soma | 5 | 5 | 74% | 0.4 | 1.0 (eyes) |
+| spirits | 5 | 5 | 79% | 0.5 | 1.0 (hun) |
+| substances | 6 | 6 | 44% | 0.5 | 1.0 (yang) |
+| systems | 5 | 5 | 60% | 0.6 | 1.0 (circulation) |
+| zangfu | 12 | 12 | 62% | 0.9 | 2.0 (zf-small-intestine) |
 
 Table `cfa-milano`, 20,000 samples.
 
 | Layer | Covered | Reached | Median zero share | Stability mean | Stability worst |
 |---|---|---|---|---|---|
-| emotions | 7 | 7 | 79% | 0.2 | 0.4 (joy) |
-| soma | 5 | 5 | 78% | 0.6 | 1.0 (nose) |
-| spirits | 5 | 5 | 78% | 0.2 | 0.3 (yi) |
-| substances | 6 | 6 | 43% | 0.8 | 1.0 (xue) |
-| systems | 5 | 5 | 66% | 0.5 | 1.0 (skin) |
-| zangfu | 12 | 12 | 67% | 0.2 | 1.0 (zf-stomach) |
+| emotions | 7 | 7 | 79% | 0.2 | 0.9 (joy) |
+| soma | 5 | 5 | 78% | 0.4 | 0.9 (head) |
+| spirits | 5 | 5 | 78% | 0.1 | 0.3 (yi) |
+| substances | 6 | 6 | 42% | 0.7 | 1.0 (xue) |
+| systems | 5 | 5 | 66% | 0.6 | 1.0 (skin) |
+| zangfu | 12 | 12 | 60% | 0.4 | 1.0 (zf-small-intestine) |
 
 Table `cfb-london`, 20,000 samples.
 
 | Layer | Covered | Reached | Median zero share | Stability mean | Stability worst |
 |---|---|---|---|---|---|
-| emotions | 7 | 7 | 79% | 0.8 | 1.0 (joy) |
-| soma | 5 | 5 | 77% | 0.4 | 1.0 (head) |
+| emotions | 7 | 7 | 79% | 0.7 | 1.0 (joy) |
+| soma | 5 | 5 | 76% | 0.5 | 1.0 (head) |
 | spirits | 5 | 5 | 79% | 0.7 | 1.0 (shen) |
-| substances | 6 | 6 | 46% | 1.0 | 2.0 (yang) |
-| systems | 5 | 5 | 44% | 0.4 | 1.0 (circulation) |
-| zangfu | 12 | 12 | 66% | 0.8 | 1.4 (zf-liver) |
+| substances | 6 | 6 | 45% | 0.9 | 2.0 (yang) |
+| systems | 5 | 5 | 44% | 0.5 | 1.0 (circulation) |
+| zangfu | 12 | 12 | 59% | 0.8 | 1.0 (zf-kidney) |
 
 Table `csa-palermo`, 20,000 samples.
 
 | Layer | Covered | Reached | Median zero share | Stability mean | Stability worst |
 |---|---|---|---|---|---|
-| emotions | 7 | 7 | 79% | 0.8 | 1.0 (joy) |
-| soma | 5 | 5 | 79% | 0.5 | 1.0 (ears) |
+| emotions | 7 | 7 | 79% | 0.6 | 1.0 (worry) |
+| soma | 5 | 5 | 79% | 0.7 | 1.0 (ears) |
 | spirits | 5 | 5 | 79% | 0.8 | 1.0 (shen) |
-| substances | 6 | 6 | 45% | 0.9 | 1.0 (yin) |
-| systems | 5 | 5 | 58% | 0.7 | 1.0 (circulation) |
-| zangfu | 12 | 12 | 69% | 0.7 | 1.0 (zf-heart) |
+| substances | 6 | 6 | 44% | 0.9 | 1.0 (yin) |
+| systems | 5 | 5 | 58% | 0.4 | 1.0 (skeleton) |
+| zangfu | 12 | 12 | 62% | 0.6 | 1.0 (zf-lung) |
 
 Table `dfb-warszawa`, 20,000 samples.
 
 | Layer | Covered | Reached | Median zero share | Stability mean | Stability worst |
 |---|---|---|---|---|---|
-| emotions | 7 | 7 | 79% | 0.7 | 1.0 (anger) |
-| soma | 5 | 5 | 75% | 0.5 | 1.0 (eyes) |
-| spirits | 5 | 5 | 79% | 0.5 | 1.0 (hun) |
-| substances | 6 | 6 | 46% | 0.4 | 1.0 (xue) |
+| emotions | 7 | 7 | 79% | 0.6 | 1.0 (joy) |
+| soma | 5 | 5 | 74% | 0.4 | 1.0 (nose) |
+| spirits | 5 | 5 | 79% | 0.4 | 1.0 (po) |
+| substances | 6 | 6 | 45% | 0.5 | 1.0 (xue) |
 | systems | 5 | 5 | 53% | 0.7 | 1.0 (circulation) |
-| zangfu | 12 | 12 | 65% | 0.8 | 1.0 (zf-liver) |
+| zangfu | 12 | 12 | 58% | 0.9 | 1.0 (zf-liver) |
+
+### Astrologia tradizionale (`traditional-astrology` 1.0.0)
+
+Table `global`, 50,000 samples.
+
+| Layer | Covered | Reached | Median zero share | Stability mean | Stability worst |
+|---|---|---|---|---|---|
+| domains | 12 | 12 | 18% | 2.4 | 5.2 (domain-8) |
+| mind | 2 | 2 | 61% | 0.5 | 1.0 (imagination) |
+| systems | 1 | 1 | 63% | 0.0 | 0.0 (vitality) |
+| temperament | 4 | 4 | 35% | 0.8 | 1.0 (sanguine) |

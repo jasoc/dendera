@@ -33,13 +33,14 @@ export class Api {
   natal = (id: number) => this.get<NatalChart>(`/profiles/${id}/natal`);
 
   /** The active schools are the profile's own (the toggle saves them with setSchools). */
-  reading = (id: number, at?: string) => this.get<ReadingResponse>(`/profiles/${id}/reading`, { at });
+  reading = (id: number, at?: string, consensus?: string) =>
+    this.get<ReadingResponse>(`/profiles/${id}/reading`, { at, consensus });
 
   setSchools = (id: number, schools: string[]) =>
     firstValueFrom(this.http.put<Profile>(`${this.base}/profiles/${id}/schools`, { schools }));
 
-  timeline = (id: number, from: string, to: string, stepHours = 6) =>
-    this.get<TimelineResponse>(`/profiles/${id}/timeline`, { from, to, stepHours });
+  timeline = (id: number, from: string, to: string, stepHours = 6, consensus?: string) =>
+    this.get<TimelineResponse>(`/profiles/${id}/timeline`, { from, to, stepHours, consensus });
 
   journal = (id: number, from?: string, to?: string) => this.get<JournalDay[]>(`/profiles/${id}/journal`, { from, to });
   saveJournal = (id: number, day: JournalDay) =>
@@ -47,7 +48,8 @@ export class Api {
   deleteJournal = (id: number, date: string) =>
     firstValueFrom(this.http.delete<void>(`${this.base}/profiles/${id}/journal/${date}`));
 
-  correlations = (id: number) => this.get<CorrelationResponse>(`/profiles/${id}/correlations`);
+  correlations = (id: number, consensus?: string) =>
+    this.get<CorrelationResponse>(`/profiles/${id}/correlations`, { consensus });
 
   geocode = (q: string) => this.get<Place[]>('/geocode', { q });
   tzOffset = (tz: string, local: string) => this.get<{ offsetMinutes: number }>('/timezone/offset', { tz, local });

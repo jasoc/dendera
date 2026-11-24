@@ -1,0 +1,115 @@
+{
+  // School: Astrologia tradizionale (Hellenistic and medieval). Reads the sky on the person's life (the twelve
+  // houses as domains) and temperament, where Melotesia reads it on the body. Same lineage as Melotesia.
+  // Weights marked "convention" have no numeric source; the others cite it. Zones: Dendera.Core/Rules/BodyZones.cs.
+  "id": "traditional-astrology",
+  "version": "1.0.0",
+  "name": "Astrologia tradizionale",
+  "icon": "school-traditional-astrology",
+  "lineage": "western-astrology",
+  "parents": [],
+  "tradition": "Astrologia ellenistica e medievale: case, dignità, profezioni",
+  "description": "Il cielo letto sulla vita della persona: le dodici case del tema natale sono gli ambiti di vita (corpo, risorse, relazioni, malattia, lavoro…), i pianeti che le attraversano o toccano i punti che vi abitano le mettono in primo piano, la profezione indica la casa dell'anno, la dignità dei pianeti dice se agiscono con agio o con fatica sul temperamento.",
+  "references": [
+    "Vettio Valente, Antologia (II sec.), libro IV: profezioni e signori del tempo",
+    "Firmico Materno, Mathesis (IV sec.), libro II: i significati delle case",
+    "Tolomeo, Tetrabiblos (II sec.), I.4–5: le nature dei pianeti; I.17–19: domicili ed esaltazioni; III.10: i luoghi afetici",
+    "William Lilly, Christian Astrology (1647): tavola delle dignità (p. 104), punteggi (p. 115), case e malattia (libro II)"
+  ],
+  "requires": ["ephemeris", "life-times"],
+  "baseline": "none",
+  "natalAmplification": 0,
+  "saturation": 2.5,
+
+  "correspondences": {
+    // Houses (tag values "1".."12") → domains of life.
+    "1": ["domain-1"], "2": ["domain-2"], "3": ["domain-3"], "4": ["domain-4"], "5": ["domain-5"], "6": ["domain-6"],
+    "7": ["domain-7"], "8": ["domain-8"], "9": ["domain-9"], "10": ["domain-10"], "11": ["domain-11"], "12": ["domain-12"],
+    // Natures of the planets (Ptolemy I.4–5): Saturn cold and dry (melancholic), Jupiter warm and moist (sanguine),
+    // Mars and the Sun hot and dry (choleric), Venus moist and warm (sanguine), the Moon moist (phlegmatic),
+    // Mercury the reason.
+    "sun": ["choleric", "vitality"], "moon": ["phlegmatic", "imagination"], "mercury": ["reason"],
+    "venus": ["sanguine"], "mars": ["choleric"], "jupiter": ["sanguine"], "saturn": ["melancholic"]
+  },
+
+  "rules": [
+    {
+      // A planet crossing a natal house brings that domain forward. Weight per planet = its orb / 15 (al-Bīrūnī,
+      // Book of Instruction §§ 436–437), as in Melotesia; the base weight is a convention.
+      "id": "transit-house",
+      "name": "Pianeta che attraversa una tua casa → quell'ambito di vita",
+      "about": "La casa natale in cui passa un pianeta è l'ambito della vita che quel pianeta tocca ora.",
+      "source": "Firmico Materno, Mathesis, II (le case); William Lilly, Christian Astrology (1647)",
+      "when": { "kind": "placement", "tags": { "house": ["*"] } },
+      "effect": {
+        "zonesFrom": ["house"],
+        "weight": 0.3,
+        "quality": "sensitivity",
+        "tagWeights": {
+          "body": { "sun": 1.0, "moon": 0.8, "saturn": 0.6, "jupiter": 0.6, "mars": 0.53, "venus": 0.47, "mercury": 0.47, "*": 0.33 }
+        }
+      },
+      "text": "{body} attraversa la tua casa {house}"
+    },
+    {
+      // Malefics in the houses of the body and of illness (I, VI, VIII, XII): Lilly, CA II on questions of sickness.
+      // Weight: convention.
+      "id": "malefic-in-hard-house",
+      "name": "Marte o Saturno nelle case del corpo e della malattia → tensione",
+      "about": "I malefici nelle case I, VI, VIII, XII sono il segnale classico di affaticamento e malattia.",
+      "source": "William Lilly, Christian Astrology (1647), libro II (domande di malattia)",
+      "when": { "kind": "placement", "tags": { "body": ["mars", "saturn"], "house": ["1", "6", "8", "12"] } },
+      "effect": { "zonesFrom": ["house"], "weight": 0.4, "quality": "tension" },
+      "text": "{body}, malefico, nella tua casa {house}"
+    },
+    {
+      // A transit to a natal point lights the domain where that point lives; natal targets weighted as in
+      // Melotesia (Ptolemy's aphetic places III.10 fully, the rest by convention).
+      "id": "transit-natal-house",
+      "name": "Transito su un punto natale → la casa di quel punto",
+      "about": "Il punto del tema toccato oggi vive in una casa: è quell'ambito che si muove.",
+      "source": "Vettio Valente, Antologia; William Lilly, Christian Astrology (1647)",
+      "when": { "kind": "transit-aspect" },
+      "effect": {
+        "zonesFrom": ["natalHouse"],
+        "weight": 0.6,
+        "tagWeights": {
+          "transitBody": { "sun": 1.0, "moon": 0.8, "saturn": 0.6, "jupiter": 0.6, "mars": 0.53, "venus": 0.47, "mercury": 0.47, "*": 0.33 },
+          "natalPoint": { "sun": 1.0, "moon": 1.0, "asc": 1.0, "mc": 1.0, "mercury": 0.6, "venus": 0.6, "mars": 0.6,
+                          "jupiter": 0.6, "saturn": 0.6, "*": 0.3 }
+        }
+      },
+      "text": "{transitBody} in {aspect} con {natalPoint} natale, nella tua casa {natalHouse}"
+    },
+    {
+      // Annual profection: the house of the year (Vettius Valens, Anthology IV). Weight: convention.
+      "id": "profection-house",
+      "name": "Casa dell'anno di profezione → quell'ambito e il suo signore",
+      "about": "Ogni anno di vita attiva una casa, contata dall'Ascendente: è il tema dell'anno.",
+      "source": "Vettio Valente, Antologia, IV",
+      "when": { "kind": "profection" },
+      "effect": { "zonesFrom": ["house", "lord"], "weight": 0.8, "quality": "sensitivity" },
+      "text": "Anno della casa {house} ({sign}): signore dell'anno {lord}"
+    },
+    {
+      // Essential dignity (Lilly CA p. 115): a dignified planet acts with ease on its nature, a debilitated one with
+      // strain. Intensity = Lilly's points / 5; weight: convention.
+      "id": "dignified",
+      "name": "Pianeta in domicilio o esaltazione → la sua natura, con agio",
+      "about": "Un pianeta forte nel suo segno agisce bene sul temperamento che governa.",
+      "source": "William Lilly, Christian Astrology (1647), pp. 104 e 115; Tolomeo, Tetrabiblos (II sec.), I.17–19",
+      "when": { "kind": "dignity", "tags": { "condition": ["dignified"] } },
+      "effect": { "zonesFrom": ["body"], "weight": 0.4, "quality": "flow" },
+      "text": "{body} {dignity} in {sign}: agisce con agio"
+    },
+    {
+      "id": "debilitated",
+      "name": "Pianeta in esilio o caduta → la sua natura, con fatica",
+      "about": "Un pianeta debole nel suo segno agisce male sul temperamento che governa.",
+      "source": "William Lilly, Christian Astrology (1647), pp. 104 e 115",
+      "when": { "kind": "dignity", "tags": { "condition": ["debilitated"] } },
+      "effect": { "zonesFrom": ["body"], "weight": 0.4, "quality": "tension" },
+      "text": "{body} {dignity} in {sign}: agisce con fatica"
+    }
+  ]
+}

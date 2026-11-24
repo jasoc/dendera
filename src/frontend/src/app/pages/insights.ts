@@ -1,7 +1,9 @@
+import { SchoolPicker } from '../components/school-picker';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { Api } from '../core/api';
 import { ProfileStore } from '../core/profile-store';
+import { ConsensusStore } from '../core/consensus-store';
 import { CorrelationResponse } from '../core/models';
 import { CatalogStore, schoolOfTrack } from '../core/catalog-store';
 import { Icon } from '../components/icon';
@@ -13,10 +15,10 @@ const EVIDENCE: Record<string, string> = { strong: 'forte', hint: 'indizio', non
 /** Which signals (and which schools' zone readings) actually move this person's journal. */
 @Component({
   selector: 'app-insights',
-  imports: [DecimalPipe, Icon, MatSlideToggleModule, MatTooltipModule],
+  imports: [DecimalPipe, Icon, MatSlideToggleModule, MatTooltipModule, SchoolPicker],
   template: `
     <section class="panel">
-      <h2>Corrispondenze <small>cosa ti muove davvero</small></h2>
+      <div class="head-row"><h2>Corrispondenze <small>cosa ti muove davvero</small></h2><app-school-picker /></div>
       <p class="legend-kinds">
         <span class="kind-tag facts">segnale</span> un fatto osservato (Kp, un transito, la pressione…)
         <span class="kind-tag consequences">conseguenza</span> una zona del corpo come la legge una scuola
@@ -41,6 +43,25 @@ const EVIDENCE: Record<string, string> = { strong: 'forte', hint: 'indizio', non
             {{ d.journalDays }} giorni di diario ({{ d.from }} → {{ d.to }}), {{ d.tracksTested }} tracce confrontate,
             {{ strong() }} corrispondenze forti, {{ hints() }} indizi.
           </p>
+          @if (byLineage().length > 0) {
+            <h3 class="fam-title">Per famiglia di tradizioni</h3>
+            <p class="muted small">Le conseguenze di ciascuna scuola, raggruppate per famiglia: quale tradizione segue meglio il tuo
+              diario. Una famiglia con più scuole parenti conta un'idea sola anche se compare più volte.</p>
+            <div class="table-wrap">
+              <table class="data fam">
+                <thead><tr><th>Famiglia</th><th>Scuole</th><th class="num">forti</th><th class="num">indizi</th><th class="num">|r| migliore</th></tr></thead>
+                <tbody>
+                  @for (g of byLineage(); track g.id) {
+                    <tr>
+                      <td>{{ g.name }}</td><td>{{ g.schools }}</td>
+                      <td class="num">{{ g.strong }}</td><td class="num">{{ g.hints }}</td>
+                      <td class="num">{{ g.best | number: '1.2-2' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
           <mat-slide-toggle class="only" [checked]="onlyRelevant()" (change)="onlyRelevant.set($event.checked)">mostra solo forti e indizi</mat-slide-toggle>
           <div class="table-wrap">
             <table class="data">
@@ -83,7 +104,11 @@ const EVIDENCE: Record<string, string> = { strong: 'forte', hint: 'indizio', non
     </section>
   `,
   styles: `
+    .head-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .head-row h2 { margin: 0; }
     .only { margin: 4px 0 12px; display: block; }
+    .fam-title { margin: 16px 0 2px; font-size: 15px; }
+    .fam { margin-bottom: 16px; }
     .legend-kinds { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
     .legend-kinds .kind-tag:not(:first-child) { margin-left: 10px; }
     .kind-tag { font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; margin-right: 4px; white-space: nowrap; }
@@ -94,6 +119,7 @@ const EVIDENCE: Record<string, string> = { strong: 'forte', hint: 'indizio', non
 export class Insights {
   private readonly api = inject(Api);
   private readonly store = inject(ProfileStore);
+  protected readonly consensus = inject(ConsensusStore);
   private readonly catalog = inject(CatalogStore);
 
   protected readonly evidence = EVIDENCE;
@@ -106,6 +132,26 @@ export class Insights {
     const all = this.data()?.findings ?? [];
     return (this.onlyRelevant() ? all.filter((f) => f.evidence !== 'none') : all).slice(0, 200);
   });
+  /** Per-school zone findings grouped by the school's lineage (family of traditions). */
+  protected readonly byLineage = computed(() => {
+    const groups = new Map<string, { id: string; name: string; schools: Set<string>; strong: number; hints: number; best: number }>();
+    for (const f of this.data()?.findings ?? []) {
+      const id = schoolOfTrack(f.signalKey);
+      const school = id ? this.catalog.school(id) : undefined;
+      if (!school) continue;
+      const g = groups.get(school.lineage.id) ??
+        { id: school.lineage.id, name: school.lineage.name, schools: new Set<string>(), strong: 0, hints: 0, best: 0 };
+      g.schools.add(school.name);
+      if (f.evidence === 'strong') g.strong++;
+      if (f.evidence === 'hint') g.hints++;
+      g.best = Math.max(g.best, Math.abs(f.pearson));
+      groups.set(g.id, g);
+    }
+    return [...groups.values()]
+      .map((g) => ({ ...g, schools: [...g.schools].join(', ') }))
+      .sort((a, b) => b.strong - a.strong || b.hints - a.hints || b.best - a.best);
+  });
+
   protected readonly strong = computed(() => this.data()?.findings.filter((f) => f.evidence === 'strong').length ?? 0);
   protected readonly hints = computed(() => this.data()?.findings.filter((f) => f.evidence === 'hint').length ?? 0);
 
@@ -125,15 +171,16 @@ export class Insights {
   constructor() {
     effect(() => {
       const p = this.store.current();
-      if (p) void this.load(p.id);
+      const consensus = this.consensus.mode();
+      if (p) void this.load(p.id, consensus);
     });
   }
 
-  private async load(id: number) {
+  private async load(id: number, consensus: string) {
     this.loading.set(true);
     this.error.set(null);
     try {
-      this.data.set(await this.api.correlations(id));
+      this.data.set(await this.api.correlations(id, consensus));
     } catch (e) {
       this.error.set('Impossibile calcolare le corrispondenze.');
       console.error(e);

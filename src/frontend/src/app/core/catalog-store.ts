@@ -29,6 +29,17 @@ export class CatalogStore {
   influence(id: string): InfluenceInfo | undefined {
     return this.influenceById().get(id);
   }
+
+  /**
+   * How many independent traditions among these schools: each school counts with its own lineage, or with the lineage
+   * it borrows from directly when a school of that lineage is among them (one step, no chains: a school borrowing from
+   * many, like Human Design, must not merge everything). Same rule as the backend's SchoolEngine.Families.
+   */
+  independentTraditions(ids: string[]): number {
+    const schools = ids.map((id) => this.school(id)).filter((s): s is CatalogSchool => !!s);
+    const present = new Set(schools.map((s) => s.lineage.id));
+    return new Set(schools.map((s) => s.parents.find((p) => present.has(p.id))?.id ?? s.lineage.id)).size;
+  }
 }
 
 /** Short school names for chips and narrow places. */
@@ -38,6 +49,13 @@ export const SCHOOL_SHORT: Record<string, string> = {
   tcm: 'MTC',
   'human-design': 'Human Design',
   'tantric-yoga': 'Yoga',
+  'traditional-astrology': 'Astrologia',
+  jyotish: 'Jyotish',
+  ayurveda: 'Ayurveda',
+  galenic: 'Galenica',
+  kabbalah: 'Cabala',
+  steiner: 'Steiner',
+  chronobiology: 'Cronobiologia',
 };
 
 export const PROVIDER_KIND: Record<string, string> = { library: 'libreria', api: 'API', computed: 'calcolato' };

@@ -306,6 +306,20 @@ convention, written in the rule file, until samples are persisted and the ritual
   Oct–Nov 2026 only 27–38% are under 50% and 4–7 nodes are at 90%+: by this reference, that period was
   more solicited than usual for this chart.
 
+### Follow-up (2026-11-21): personal rarity and natal weights
+
+- Found on two profiles born 2001 and 2003: calves always at 90%+. Cause: Uranus, Neptune and the MC in
+  Aquarius (generational), so every transit to them lands on Aquarius' zones, and the population reference
+  compares the chart with everyone.
+- Owner's decision: both fixes. Melotesia 2.4.0 weighs natal targets (Ptolemy's aphetic places, Tetrabiblos
+  III.10: Sun, Moon, Ascendant, MC 1; other classical planets 0.6; Uranus, Neptune, Pluto, node 0.3,
+  conventions). Sky schools now score against a **personal reference** (`PersonalReference`, 4000 moments
+  over 90 years from birth, ~2 s on first use, cached); weather schools keep the climate tables; the ritual's
+  global tables are the fallback.
+- Check: profile 1 (Melotesia only) calves average 59% over 12 random instants 2000–2040 (≥90% in 3 of 12),
+  71–97% in Oct–Nov 2026; profile 2 calves 40–42% in 2019 and 2031, 71–86% in Oct–Nov 2026. With all five
+  schools on profile 2, 26–45% of the touched nodes are under 50% in Oct–Nov 2026.
+
 ## Steps
 
 1. Research pass: read the sources, fill the table with values and citations; we review.

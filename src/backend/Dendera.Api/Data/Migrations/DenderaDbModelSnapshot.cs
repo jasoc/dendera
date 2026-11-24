@@ -41,6 +41,9 @@ namespace Dendera.Api.Data.Migrations
                     b.Property<int?>("Head")
                         .HasColumnType("INTEGER");
 
+                    b.Property<TimeOnly?>("IllnessOnset")
+                        .HasColumnType("TEXT");
+
                     b.Property<int?>("Mood")
                         .HasColumnType("INTEGER");
 
@@ -132,6 +135,65 @@ namespace Dendera.Api.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Profiles");
+                });
+
+            modelBuilder.Entity("Dendera.Api.Data.StoredSample", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("At")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Detail")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("Intensity")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TagsJson")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Unit")
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<double?>("Value")
+                        .HasColumnType("REAL");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Source", "At");
+
+                    b.HasIndex("Source", "Key", "At")
+                        .IsUnique();
+
+                    b.ToTable("Samples");
                 });
 
             modelBuilder.Entity("Dendera.Api.Data.JournalDay", b =>

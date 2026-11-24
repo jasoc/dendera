@@ -2,8 +2,8 @@
   "school": "human-design",
   "schoolVersion": "1.2.0",
   "rulesHash": "984b54c1219a8427",
-  "referenceHash": "795d56ef7fd66702",
-  "signalsVersion": 1,
+  "referenceHash": "e64c1e831b10f94d",
+  "signalsVersion": 4,
   "samples": 50000,
   "tables": {
     "global": {

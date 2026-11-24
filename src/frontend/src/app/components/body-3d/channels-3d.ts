@@ -1,4 +1,4 @@
-import { Vec3 } from './body-shape';
+import { Vec3, pose } from './body-shape';
 
 // Channels drawn as lines of light: the twelve meridians of Chinese medicine (one per zang-fu node, drawn on both
 // sides of the body) and the three nadis of yoga. Paths are simplified traces of the classical routes (Lingshu 10),
@@ -31,8 +31,8 @@ const mirrorPath = (p: Vec3[]): Vec3[] => p.map(([x, y, z]) => [-x, y, z]);
 /** Both sides of every meridian. */
 export function meridianPaths(): { zone: string; points: Vec3[] }[] {
   return Object.entries(MERIDIANS).flatMap(([zone, points]) => [
-    { zone, points },
-    { zone, points: mirrorPath(points) },
+    { zone, points: points.map(pose) },
+    { zone, points: mirrorPath(points).map(pose) },
   ]);
 }
 
@@ -50,10 +50,11 @@ export function nadiPaths(): { zone: string; points: Vec3[] }[] {
       const z = -0.03 + t * 0.1 * t;
       return [x, y, z];
     });
+  const posed = (points: Vec3[]) => points.map(pose);
   return [
-    { zone: 'sushumna', points: [[0, bottom, -0.035], [0, 1.2, -0.04], [0, 1.5, -0.03], [0, 1.77, -0.005]] },
-    { zone: 'ida', points: spiral(1) },
-    { zone: 'pingala', points: spiral(-1) },
+    { zone: 'sushumna', points: posed([[0, bottom, -0.035], [0, 1.2, -0.04], [0, 1.5, -0.03], [0, 1.77, -0.005]]) },
+    { zone: 'ida', points: posed(spiral(1)) },
+    { zone: 'pingala', points: posed(spiral(-1)) },
   ];
 }
 

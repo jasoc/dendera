@@ -40,6 +40,12 @@ import { METRIC_HINT, METRIC_NAME } from '../core/symbols';
           }
         </div>
 
+        <mat-form-field appearance="outline" class="onset"
+                        matTooltip="Se oggi è cominciato un malessere (febbre, influenza, un dolore nuovo), l'ora in cui è iniziato: da lì Dendera conta i giorni critici di Ippocrate e le crisi lunari di Culpeper per 30 giorni.">
+          <mat-label>Inizio di un malessere (ora)</mat-label>
+          <input matInput type="time" [ngModel]="(entry().illnessOnset ?? '').slice(0, 5)" (ngModelChange)="patchOnset($event)" />
+        </mat-form-field>
+
         <mat-form-field appearance="outline">
           <mat-label>Note (cosa è successo, sogni, sensazioni)</mat-label>
           <textarea matInput rows="3" [ngModel]="entry().notes" (ngModelChange)="patchNotes($event)"></textarea>
@@ -120,6 +126,11 @@ export class Journal {
 
   protected set(m: Metric, v: number | null) {
     this.entry.update((e) => ({ ...e, [m]: v }));
+    this.saved.set(false);
+  }
+
+  protected patchOnset(value: string) {
+    this.entry.update((e) => ({ ...e, illnessOnset: value ? value.slice(0, 5) + ':00' : null }));
     this.saved.set(false);
   }
 

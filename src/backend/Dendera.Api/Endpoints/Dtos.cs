@@ -73,10 +73,10 @@ public sealed record TimelineResponse(Timeline Timeline, IReadOnlyList<SourceSta
 
 public sealed record JournalDto(
     DateOnly Date, int? Energy, int? Mood, int? Sleep, int? Focus, int? Stress, int? Gut, int? Head, int? Body,
-    string? Notes)
+    string? Notes, TimeOnly? IllnessOnset = null)
 {
     public static JournalDto From(JournalDay d) =>
-        new(d.Date, d.Energy, d.Mood, d.Sleep, d.Focus, d.Stress, d.Gut, d.Head, d.Body, d.Notes);
+        new(d.Date, d.Energy, d.Mood, d.Sleep, d.Focus, d.Stress, d.Gut, d.Head, d.Body, d.Notes, d.IllnessOnset);
 
     public IEnumerable<string> Validate()
     {
@@ -89,6 +89,7 @@ public sealed record JournalDto(
         d.Energy = Energy; d.Mood = Mood; d.Sleep = Sleep; d.Focus = Focus;
         d.Stress = Stress; d.Gut = Gut; d.Head = Head; d.Body = Body;
         d.Notes = string.IsNullOrWhiteSpace(Notes) ? null : Notes.Trim();
+        d.IllnessOnset = IllnessOnset;
     }
 
     public IEnumerable<(string name, int? value)> Metrics() =>
@@ -126,7 +127,9 @@ public sealed record CatalogSchool(
     double Saturation, double NatalAmplification, IReadOnlyList<ReferenceTable> Tables,
     IReadOnlyList<CatalogRule> Rules,
     IReadOnlyList<CatalogCorrespondence> Correspondences,
-    CalibrationState Calibration)
+    CalibrationState Calibration,
+    CatalogLineage Lineage,
+    IReadOnlyList<CatalogLineage> Parents)
 {
     public static CatalogSchool From(RuleSet s) => new(
         s.Id, s.Version, s.Name, s.Description, s.Tradition, s.Icon, s.References, s.Requires, s.Baseline,
@@ -140,7 +143,18 @@ public sealed record CatalogSchool(
         s.Rules.Select(r => CatalogRule.From(s, r)).ToList(),
         s.Correspondences.Select(kv => new CatalogCorrespondence(
             kv.Key, Lexicon.Name(kv.Key), kv.Value.Select(z => new CatalogZoneRef(z, Lexicon.Name(z))).ToList())).ToList(),
-        s.Calibration);
+        s.Calibration,
+        CatalogLineage.From(s.Lineage),
+        s.Parents.Select(CatalogLineage.From).ToList());
+}
+
+public sealed record CatalogLineage(string Id, string Name, string Description)
+{
+    public static CatalogLineage From(string id)
+    {
+        var l = Lineages.Of(id);
+        return new CatalogLineage(l.Id, l.Name, l.Description);
+    }
 }
 
 public sealed record CatalogZoneRef(string Id, string Label);
@@ -154,7 +168,7 @@ public sealed record CatalogRule(
     string Id, string Kind, string KindLabel, IReadOnlyDictionary<string, string[]>? Tags, IReadOnlyList<string> Conditions,
     double MinIntensity,
     IReadOnlyList<CatalogZoneRef> Zones, IReadOnlyList<string> ZonesFrom, string? ZonesFromText,
-    double Weight, string? Quality, string? QualityLabel, string Text)
+    double Weight, string? Quality, string? QualityLabel, string Text, string Name, string About, string Source)
 {
     public static CatalogRule From(RuleSet s, Rule r) => new(
         r.Id, r.When.Kind, Lexicon.Kind(r.When.Kind), r.When.Tags,
@@ -169,7 +183,7 @@ public sealed record CatalogRule(
         r.Effect.Weight,
         r.Effect.Quality,
         r.Effect.Quality is null ? "dalla qualità dell'aspetto" : Lexicon.Name(r.Effect.Quality),
-        r.Text);
+        r.Text, r.Name, r.About, r.Source);
 }
 
 public sealed record CatalogZone(

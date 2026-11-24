@@ -11,7 +11,7 @@ public sealed record ProfileContext(Profile Profile, NatalChart Natal, IReadOnly
     public TimeSpan CurrentOffset(DateTimeOffset at) => TimeZones.OffsetAt(Profile.CurrentTimeZone, at);
 }
 
-public sealed class ProfileContextFactory(IEphemeris ephemeris, RuleSetCatalog catalog)
+public sealed class ProfileContextFactory(IEphemeris ephemeris, RuleSetCatalog catalog, PersonalReferenceCache personal)
 {
     /// <param name="schools">Override of the profile's active schools (not saved); null → the profile's own.</param>
     public ProfileContext Create(Profile profile, IEnumerable<string>? schools = null)
@@ -19,10 +19,15 @@ public sealed class ProfileContextFactory(IEphemeris ephemeris, RuleSetCatalog c
         var system = Enum.TryParse<HouseSystem>(profile.HouseSystem, true, out var hs) ? hs : HouseSystem.Placidus;
         var natal = ChartCalculator.Compute(ephemeris,
             new BirthData(profile.BirthUtc, profile.BirthLatitude, profile.BirthLongitude), system);
-        // Each school with the reference table of the place where the person is now (climate zone for weather schools).
-        var active = catalog.ForPlace(catalog.Resolve(schools ?? profile.SchoolIds), profile.CurrentLatitude, profile.CurrentLongitude);
-        var baselines = NatalBaselines.For(active, natal,
+        // Each school with its reference: the person's own life of skies for the schools that read only the sky
+        // (personal rarity), the climate zone of the current place for the weather schools.
+        var resolved = catalog.Resolve(schools ?? profile.SchoolIds);
+        var baselines = NatalBaselines.For(resolved, natal,
             () => HumanDesign.Compute(ephemeris, natal.Birth.BirthUtc).DefinedCenters);
+        var own = personal.For(natal, resolved, baselines, profile.CurrentLatitude, profile.CurrentLongitude);
+        var active = catalog.ForPlace(resolved, profile.CurrentLatitude, profile.CurrentLongitude)
+            .Select(s => own.TryGetValue(s.Id, out var table) ? s with { Rarity = table } : s)
+            .ToList();
         return new ProfileContext(profile, natal, active, baselines);
     }
 

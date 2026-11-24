@@ -53,6 +53,7 @@ services.AddSingleton(sp => new RuleSetCatalog(
     sp.GetServices<ISignalProvider>().Select(p => p.Info),
     sp.GetRequiredService<ILoggerFactory>().CreateLogger<RuleSetCatalog>()));
 services.AddSingleton<InfluenceStatusBoard>();
+services.AddSingleton<PersonalReferenceCache>();
 services.AddSingleton<ProfileContextFactory>();
 services.AddScoped<SignalHub>();
 
@@ -60,6 +61,10 @@ services.AddScoped<SignalHub>();
 services.AddSingleton<ISignalProvider, EphemerisProvider>();
 services.AddSingleton<ISignalProvider, TcmCalendarProvider>();
 services.AddSingleton<ISignalProvider, HumanDesignProvider>();
+services.AddSingleton<ISignalProvider, PlanetaryHoursProvider>();
+services.AddSingleton<ISignalProvider, LunarStationsProvider>();
+services.AddSingleton<ISignalProvider, LifeTimesProvider>();
+services.AddSingleton<ISignalProvider, DecumbitureProvider>();
 const string userAgent = "Dendera/0.1 (self-hosted)";
 services.AddHttpClient<GfzKpProvider>(c =>
 {
@@ -88,9 +93,26 @@ services.AddHttpClient<SchumannProvider>(c =>
     c.Timeout = TimeSpan.FromSeconds(15);
     c.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
 });
+services.AddHttpClient<NoaaSpaceWeatherProvider>(c =>
+{
+    c.BaseAddress = new Uri(NoaaSpaceWeatherProvider.BaseUrl);
+    c.Timeout = TimeSpan.FromSeconds(30);
+    c.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
+});
+services.AddHttpClient(OpenMeteoAirQualityProvider.Client, c =>
+{
+    c.BaseAddress = new Uri("https://air-quality-api.open-meteo.com/");
+    c.Timeout = TimeSpan.FromSeconds(20);
+});
 services.AddTransient<ISignalProvider>(sp => sp.GetRequiredService<GfzKpProvider>());
 services.AddTransient<ISignalProvider, OpenMeteoWeatherProvider>();
-services.AddTransient<ISignalProvider>(sp => sp.GetRequiredService<SchumannProvider>());
+services.AddTransient<ISignalProvider, OpenMeteoAirQualityProvider>();
+// Feeds with a 24-hour memory: wrapped so every sample is kept in SQLite (history), collected hourly in background.
+services.AddTransient<ISignalProvider>(sp => new PersistentProvider(sp.GetRequiredService<SchumannProvider>(),
+    sp.GetRequiredService<IServiceScopeFactory>(), sp.GetRequiredService<ILogger<PersistentProvider>>()));
+services.AddTransient<ISignalProvider>(sp => new PersistentProvider(sp.GetRequiredService<NoaaSpaceWeatherProvider>(),
+    sp.GetRequiredService<IServiceScopeFactory>(), sp.GetRequiredService<ILogger<PersistentProvider>>()));
+services.AddHostedService<SampleCollector>();
 
 services.AddCors(o => o.AddDefaultPolicy(p =>
     p.WithOrigins("http://localhost:4200").AllowAnyHeader().AllowAnyMethod()));

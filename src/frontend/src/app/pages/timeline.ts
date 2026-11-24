@@ -1,6 +1,8 @@
+import { SchoolPicker } from '../components/school-picker';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { Api } from '../core/api';
 import { ProfileStore } from '../core/profile-store';
+import { ConsensusStore } from '../core/consensus-store';
 import { JournalDay, METRICS, SignalTrack, TimelineResponse } from '../core/models';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
@@ -58,9 +60,10 @@ const RANGES = [
 /** Oscilloscope view: every signal, every body zone and the journal on one time axis. */
 @Component({
   selector: 'app-timeline',
-  imports: [Icon, MatButtonToggleModule, MatSlideToggleModule, MatTooltipModule],
+  imports: [Icon, MatButtonToggleModule, MatSlideToggleModule, MatTooltipModule, SchoolPicker],
   template: `
     <header class="toolbar">
+      <app-school-picker />
       <div class="when">
         <mat-button-toggle-group [value]="range()" (change)="range.set($event.value)" hideSingleSelectionIndicator aria-label="Periodo">
           @for (r of ranges; track r.label; let i = $index) {
@@ -154,6 +157,7 @@ const RANGES = [
 export class Timeline {
   private readonly api = inject(Api);
   private readonly store = inject(ProfileStore);
+  protected readonly consensus = inject(ConsensusStore);
   private readonly catalog = inject(CatalogStore);
 
   protected readonly W = W;
@@ -282,11 +286,12 @@ export class Timeline {
     effect(() => {
       const p = this.store.current();
       const r = RANGES[this.range()];
-      if (p) void this.load(p.id, r.back, r.fwd);
+      const consensus = this.consensus.mode();
+      if (p) void this.load(p.id, r.back, r.fwd, consensus);
     });
   }
 
-  private async load(id: number, back: number, fwd: number) {
+  private async load(id: number, back: number, fwd: number, consensus: string) {
     this.loading.set(true);
     this.error.set(null);
     const now = Date.now();
@@ -295,7 +300,7 @@ export class Timeline {
     const step = back + fwd > 100 ? 12 : 6;
     try {
       const [tl, journal] = await Promise.all([
-        this.api.timeline(id, from.toISOString(), to.toISOString(), step),
+        this.api.timeline(id, from.toISOString(), to.toISOString(), step, consensus),
         this.api.journal(id, from.toISOString().slice(0, 10), to.toISOString().slice(0, 10)),
       ]);
       this.data.set(tl);

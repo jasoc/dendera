@@ -5,6 +5,8 @@
   "version": "1.2.0",
   "name": "Human Design",
   "icon": "school-human-design",
+  "lineage": "human-design",
+  "parents": ["western-astrology", "chinese-classics", "tantra", "hermetic"],
   "tradition": "Sistema sintetico del 1987 (Ra Uru Hu): I Ching, astrologia, chakra, Kabbalah",
   "description": "Lo zodiaco è diviso nelle 64 porte dell'I Ching; ogni porta appartiene a uno dei nove centri del corpo. Il tema natale (nascita e 88° di Sole prima) definisce alcuni centri; quelli aperti sono i più esposti al condizionamento dei transiti. Un transito che completa un canale collega due centri per qualche ora o giorno.",
   "references": [
@@ -37,6 +39,9 @@
   "rules": [
     {
       "id": "transit-gate",
+      "name": "Corpo celeste in una porta → il suo centro",
+      "about": "Ogni porta dell'I Ching appartiene a un centro del bodygraph: il pianeta che la attraversa lo attiva. Sole e Terra portano il 70% dell'impronta.",
+      "source": "Ra Uru Hu, The Definitive Book of Human Design (2011); Rave I'Ching (1989)",
       "when": { "kind": "hd-gate" },
       "effect": {
         "zonesFrom": ["center"],
@@ -50,6 +55,9 @@
     },
     {
       "id": "open-center",
+      "name": "Transito su un centro aperto nel tuo tema → condizionamento",
+      "about": "Un centro non definito alla nascita riceve e amplifica ciò che arriva da fuori: è lì che il transito si sente di più.",
+      "source": "Ra Uru Hu, The Definitive Book of Human Design (centri aperti e condizionamento)",
       "when": { "kind": "hd-gate", "tags": { "natalCenter": ["open"] } },
       "effect": {
         "zonesFrom": ["center"],
@@ -63,6 +71,9 @@
     },
     {
       "id": "channel",
+      "name": "Transito che completa un tuo canale → i due centri collegati",
+      "about": "Se il pianeta occupa la porta che manca a un tuo canale, per qualche ora o giorno i due centri si collegano.",
+      "source": "Ra Uru Hu, The Definitive Book of Human Design (canali)",
       "when": { "kind": "hd-gate", "tags": { "channel": ["*"] } },
       "effect": {
         "zonesFrom": ["center", "channelCenter"],

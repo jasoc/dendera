@@ -15,7 +15,8 @@ source "$ROOT/scripts/lib/dotnet.sh"
 dendera_load_env "$ROOT"
 dendera_ensure_dotnet "$ROOT"
 
-export ASPNETCORE_URLS="http://localhost:5180"
+# DENDERA_HOST=0.0.0.0 (in .env or the environment) serves on every interface, e.g. to open the app from a phone.
+export ASPNETCORE_URLS="http://${DENDERA_HOST:-localhost}:5180"
 
 echo "==> Starting Dendera.Api on $ASPNETCORE_URLS (dotnet watch: edits to backend code apply live)"
 # Run from the project folder: the default SQLite path (dendera.db) is relative to it.

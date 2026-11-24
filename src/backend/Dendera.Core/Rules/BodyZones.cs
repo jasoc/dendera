@@ -19,9 +19,13 @@ public static class BodyLayers
     public const string Substances = "substances";
     public const string Chakras = "chakras";
     public const string Nadis = "nadis";
+    public const string Domains = "domains";
+    public const string Doshas = "doshas";
+    public const string Sephiroth = "sephiroth";
+    public const string Members = "members";
 
     public static readonly IReadOnlyList<string> All =
-        [Soma, Systems, Temperament, Emotions, Mind, ZangFu, Spirits, Substances, Chakras, Nadis];
+        [Soma, Systems, Temperament, Emotions, Mind, ZangFu, Spirits, Substances, Chakras, Nadis, Domains, Doshas, Sephiroth, Members];
 }
 
 /// <summary>
@@ -133,6 +137,45 @@ public static class BodyZones
         new("ida", BodyLayers.Nadis, null, "Ida: la nadi lunare, a sinistra; freschezza, ricettività, mente. Prevale di notte e con la Luna crescente."),
         new("pingala", BodyLayers.Nadis, null, "Pingala: la nadi solare, a destra; calore, azione, corpo. Prevale di giorno."),
         new("sushumna", BodyLayers.Nadis, null, "Sushumna: il canale centrale lungo la colonna; si apre negli istanti di passaggio, all'alba e al tramonto."),
+
+        // Domains of life: the twelve houses of traditional astrology (Valens, Firmicus, Lilly), the person's life
+        // rather than the body. Not places: they tint the aura.
+        new("domain-1", BodyLayers.Domains, null, "Casa I, Vita: la persona, il corpo, la vitalità, il temperamento."),
+        new("domain-2", BodyLayers.Domains, null, "Casa II, Risorse: beni, mezzi, sostentamento."),
+        new("domain-3", BodyLayers.Domains, null, "Casa III, Fratelli: fratelli e sorelle, vicini, brevi viaggi, parola."),
+        new("domain-4", BodyLayers.Domains, null, "Casa IV, Radici: la casa, il padre, la terra, la fine delle cose."),
+        new("domain-5", BodyLayers.Domains, null, "Casa V, Figli: figli, piaceri, creatività, svago."),
+        new("domain-6", BodyLayers.Domains, null, "Casa VI, Malattia: salute, fatica quotidiana, servizio."),
+        new("domain-7", BodyLayers.Domains, null, "Casa VII, Relazioni: coppia, soci, avversari dichiarati."),
+        new("domain-8", BodyLayers.Domains, null, "Casa VIII, Morte: crisi, eredità, beni altrui."),
+        new("domain-9", BodyLayers.Domains, null, "Casa IX, Viaggi lunghi: fede, studio, filosofia."),
+        new("domain-10", BodyLayers.Domains, null, "Casa X, Azione: lavoro, ruolo pubblico, reputazione."),
+        new("domain-11", BodyLayers.Domains, null, "Casa XI, Amici: alleati, speranze, buona sorte."),
+        new("domain-12", BodyLayers.Domains, null, "Casa XII, Prove: isolamento, nemici nascosti, ospedali, ritiro."),
+
+        // The three doshas of Ayurveda (Ashtanga Hridaya, Sutrasthana 1 and 12), in their main seat.
+        new("vata", BodyLayers.Doshas, "gut", "Vata (aria ed etere): movimento, nervi, respiro; secco, leggero, freddo, mobile. Sede principale: il colon."),
+        new("pitta", BodyLayers.Doshas, "solar-plexus", "Pitta (fuoco e acqua): trasformazione, digestione, calore; caldo, acuto, leggero. Sede: tra stomaco e intestino."),
+        new("kapha", BodyLayers.Doshas, "lungs", "Kapha (acqua e terra): struttura, coesione, umidità; pesante, freddo, stabile. Sede: il petto."),
+
+        // The ten Sephiroth of the Tree of Life on the body of Adam Kadmon (Agrippa, De occulta philosophia III.10;
+        // the Golden Dawn's planetary attributions).
+        new("kether", BodyLayers.Sephiroth, "brain", "Kether (Corona): sopra il capo; l'unità, il primo movimento."),
+        new("chokmah", BodyLayers.Sephiroth, "brain", "Chokmah (Sapienza): il lato destro del capo; lo zodiaco e le stelle fisse."),
+        new("binah", BodyLayers.Sephiroth, "brain", "Binah (Intelligenza): il lato sinistro del capo; Saturno, la forma, il tempo."),
+        new("chesed", BodyLayers.Sephiroth, "shoulders", "Chesed (Misericordia): braccio destro; Giove, l'espansione, la generosità."),
+        new("geburah", BodyLayers.Sephiroth, "shoulders", "Geburah (Forza): braccio sinistro; Marte, il rigore, il limite."),
+        new("tiphereth", BodyLayers.Sephiroth, "heart", "Tiphereth (Bellezza): il cuore; il Sole, l'armonia, il centro."),
+        new("netzach", BodyLayers.Sephiroth, "thighs", "Netzach (Vittoria): anca destra; Venere, il desiderio, la natura."),
+        new("hod", BodyLayers.Sephiroth, "thighs", "Hod (Gloria): anca sinistra; Mercurio, la parola, l'intelletto."),
+        new("yesod", BodyLayers.Sephiroth, "pelvis", "Yesod (Fondamento): i genitali; la Luna, le immagini, la generazione."),
+        new("malkuth", BodyLayers.Sephiroth, "feet", "Malkuth (Regno): i piedi; la Terra e i quattro elementi."),
+
+        // Steiner's four members of the human being (Theosophy, 1904; Occult Physiology, GA 128).
+        new("physical-body", BodyLayers.Members, null, "Corpo fisico: la forma minerale, ciò che si vede e si pesa."),
+        new("etheric-body", BodyLayers.Members, null, "Corpo eterico (vitale): crescita, ritmi, rigenerazione, memoria; lavora soprattutto nel sonno."),
+        new("astral-body", BodyLayers.Members, null, "Corpo astrale: sensazioni, desideri, emozioni, coscienza; lascia il corpo nel sonno."),
+        new("ego", BodyLayers.Members, null, "Io: l'individualità che dirige gli altri tre e attraversa le vite."),
     ];
 
     private static readonly Dictionary<string, BodyNode> ById = Nodes.ToDictionary(n => n.Id);

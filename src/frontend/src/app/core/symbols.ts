@@ -102,10 +102,22 @@ export const KIND_GROUP: Record<string, string> = {
   'solar-term': 'Calendario cinese',
   'organ-clock': 'Calendario cinese',
   'hd-gate': 'Human Design',
+  decan: 'Cielo',
+  'fixed-star': 'Cielo',
+  'planetary-hour': 'Tempi tradizionali',
+  'lunar-mansion': 'Luna e luce',
+  nakshatra: 'Luna e luce',
+  ganzhi: 'Calendario cinese',
+  septennial: 'Tempi della vita',
+  profection: 'Tempi della vita',
+  dasha: 'Tempi della vita',
+  dignity: 'Cielo',
+  'solar-hour': 'Tempi tradizionali',
+  'sidereal-placement': 'Luna e luce',
 };
 
 /** Display order of the signal groups (Adesso, Timeline). */
 export const GROUP_ORDER = [
   'Cielo', 'Transiti sul tema natale', 'Aspetti nel cielo', 'Luna e luce', 'Sole e magnetosfera', 'Meteo',
-  'Calendario cinese', 'Human Design',
+  'Calendario cinese', 'Tempi tradizionali', 'Tempi della vita', 'Human Design',
 ];

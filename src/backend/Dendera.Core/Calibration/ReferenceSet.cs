@@ -33,7 +33,7 @@ public sealed record ReferenceSet(
     /// Bump whenever an influence changes how it computes intensity or which signals it emits (orbs, Kp mapping,
     /// weather thresholds, new kinds): every quantile table becomes stale and the ritual must run again.
     /// </summary>
-    public const int SignalsVersion = 1;
+    public const int SignalsVersion = 4; // 2: decans, stars, ganzhi, hours, lunar stations, life times; 3: dignity, solar hour, sidereal; 4: space weather, air, decumbiture
 
     public static readonly ReferenceSet Default = new();
 

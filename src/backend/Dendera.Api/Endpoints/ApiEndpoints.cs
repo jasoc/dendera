@@ -103,7 +103,7 @@ public static class ApiEndpoints
 
         // ---------- the pipeline ----------
         profiles.MapGet("/{id:int}/reading", async (
-            int id, DateTimeOffset? at, string? schools,
+            int id, DateTimeOffset? at, string? schools, string? consensus,
             DenderaDb db, ProfileContextFactory factory, SignalHub hub, IEphemeris eph, TimeProvider clock,
             CancellationToken ct) =>
         {
@@ -111,14 +111,16 @@ public static class ApiEndpoints
             var ctx = factory.Create(p, ProfileContextFactory.ParseOverride(schools));
             var when = at ?? clock.GetUtcNow();
 
-            var bundle = await hub.CollectAsync([when], p.CurrentLatitude, p.CurrentLongitude, ctx.Natal, ct);
+            var bundle = await hub.CollectAsync([when], p.CurrentLatitude, p.CurrentLongitude, ctx.Natal, ct,
+                await IllnessOnsets(db, ctx, ct));
             var active = bundle.ActiveAt()(when);
-            var reading = ReadingEngine.Compose(when, ctx.Schools, ctx.Baselines, eph.Positions(when), ctx.Natal, active);
+            var reading = ReadingEngine.Compose(when, ctx.Schools, ctx.Baselines, eph.Positions(when), ctx.Natal, active,
+                ParseConsensus(consensus));
             return Results.Ok(new ReadingResponse(reading, bundle.Sources));
         });
 
         profiles.MapGet("/{id:int}/timeline", async (
-            int id, DateTimeOffset? from, DateTimeOffset? to, int? stepHours, string? schools,
+            int id, DateTimeOffset? from, DateTimeOffset? to, int? stepHours, string? schools, string? consensus,
             DenderaDb db, ProfileContextFactory factory, SignalHub hub, TimeProvider clock, CancellationToken ct) =>
         {
             if (await db.Profiles.FindAsync([id], ct) is not { } p) return Results.NotFound();
@@ -131,7 +133,7 @@ public static class ApiEndpoints
 
             var step = Math.Clamp(stepHours ?? 6, 1, 24);
             var ctx = factory.Create(p, ProfileContextFactory.ParseOverride(schools));
-            var (timeline, sources) = await BuildTimeline(ctx, Align(start, step), end, step, hub, ct);
+            var (timeline, sources) = await BuildTimeline(ctx, Align(start, step), end, step, hub, db, ct, ParseConsensus(consensus));
             return Results.Ok(new TimelineResponse(timeline, sources, step));
         });
 
@@ -170,7 +172,7 @@ public static class ApiEndpoints
 
         // ---------- correlations: journal metrics against signal and zone tracks ----------
         profiles.MapGet("/{id:int}/correlations", async (
-            int id, string? schools, DenderaDb db, ProfileContextFactory factory, SignalHub hub, CancellationToken ct) =>
+            int id, string? schools, string? consensus, DenderaDb db, ProfileContextFactory factory, SignalHub hub, CancellationToken ct) =>
         {
             if (await db.Profiles.FindAsync([id], ct) is not { } p) return Results.NotFound();
             var days = await db.Journal.Where(j => j.ProfileId == id).OrderBy(j => j.Date).ToListAsync(ct);
@@ -189,7 +191,7 @@ public static class ApiEndpoints
             var offset = ctx.CurrentOffset(DateTimeOffset.UtcNow);
             var start = new DateTimeOffset(first.ToDateTime(TimeOnly.MinValue), offset);
             var end = new DateTimeOffset(last.ToDateTime(new TimeOnly(23, 0)), offset);
-            var (timeline, sources) = await BuildTimeline(ctx, start, end, 6, hub, ct);
+            var (timeline, sources) = await BuildTimeline(ctx, start, end, 6, hub, db, ct, ParseConsensus(consensus));
 
             var series = CorrelationEngine.Daily(timeline.Signals.Concat(timeline.Zones), offset);
             var journal = days.Where(d => d.Date >= first).Select(d => JournalDto.From(d).ToCore()).ToList();
@@ -199,16 +201,35 @@ public static class ApiEndpoints
     }
 
     private static async Task<(Timeline, IReadOnlyList<SourceStatus>)> BuildTimeline(
-        ProfileContext ctx, DateTimeOffset start, DateTimeOffset end, int stepHours, SignalHub hub, CancellationToken ct)
+        ProfileContext ctx, DateTimeOffset start, DateTimeOffset end, int stepHours, SignalHub hub, DenderaDb db, CancellationToken ct,
+        ConsensusMode consensus = ConsensusMode.Plain)
     {
         var frames = new List<DateTimeOffset>();
         for (var t = start; t <= end; t = t.AddHours(stepHours)) frames.Add(t);
 
         var p = ctx.Profile;
-        var bundle = await hub.CollectAsync(frames, p.CurrentLatitude, p.CurrentLongitude, ctx.Natal, ct);
+        var bundle = await hub.CollectAsync(frames, p.CurrentLatitude, p.CurrentLongitude, ctx.Natal, ct,
+            await IllnessOnsets(db, ctx, ct));
         var timeline = ReadingEngine.BuildTimeline(start, end, ctx.Schools, ctx.Baselines,
-            bundle.All, frames, bundle.ActiveAt());
+            bundle.All, frames, bundle.ActiveAt(), consensus);
         return (timeline, bundle.Sources);
+    }
+
+    /// <summary>"?consensus=lineage" → one vote per family of traditions; anything else → one vote per school.</summary>
+    private static ConsensusMode ParseConsensus(string? consensus) =>
+        string.Equals(consensus, "lineage", StringComparison.OrdinalIgnoreCase) ? ConsensusMode.Lineage : ConsensusMode.Plain;
+
+    /// <summary>Onsets of malaise recorded in the journal (local time of the current place → UTC), for the decumbiture.</summary>
+    private static async Task<IReadOnlyList<DateTimeOffset>> IllnessOnsets(DenderaDb db, ProfileContext ctx, CancellationToken ct)
+    {
+        var id = ctx.Profile.Id;
+        var days = await db.Journal.Where(j => j.ProfileId == id && j.IllnessOnset != null)
+            .Select(j => new { j.Date, j.IllnessOnset }).ToListAsync(ct);
+        return days.Select(d =>
+        {
+            var local = d.Date.ToDateTime(d.IllnessOnset!.Value);
+            return new DateTimeOffset(local, ctx.CurrentOffset(new DateTimeOffset(local, TimeSpan.Zero))).ToUniversalTime();
+        }).OrderBy(t => t).ToList();
     }
 
     /// <summary>Align to whole step hours (UTC) so cached external samples line up with frames.</summary>

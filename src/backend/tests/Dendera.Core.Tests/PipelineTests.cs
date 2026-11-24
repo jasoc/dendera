@@ -54,7 +54,7 @@ public class PipelineTests
     public void Rule_on_a_kind_no_required_influence_emits_is_rejected()
     {
         var school = RuleSetJson.Parse("""
-        { "id": "x", "version": "1", "name": "x", "requires": ["gfz"],
+        { "id": "x", "version": "1", "lineage": "modern-science", "name": "x", "requires": ["gfz"],
           "rules": [ { "id": "r", "when": { "kind": "humidity" }, "effect": { "zones": ["head"] } } ] }
         """);
         Assert.Throws<InvalidDataException>(() => RuleSetJson.ValidateInfluences(school, Influences.All));
@@ -66,7 +66,7 @@ public class PipelineTests
     public void Unknown_zone_is_rejected()
     {
         const string json = """
-        { "id": "x", "version": "1", "name": "x", "correspondences": { "aries": ["elbow"] } }
+        { "id": "x", "version": "1", "lineage": "modern-science", "name": "x", "correspondences": { "aries": ["elbow"] } }
         """;
         Assert.Throws<InvalidDataException>(() => RuleSetJson.Parse(json));
     }
@@ -226,7 +226,7 @@ public class PipelineTests
     }
 
     private static RuleSet Rules(string id, string rule) =>
-        RuleSetJson.Parse($$"""{ "id": "{{id}}", "version": "1", "name": "{{id}}", "rules": [ {{rule}} ] }""");
+        RuleSetJson.Parse($$"""{ "id": "{{id}}", "version": "1", "lineage": "modern-science", "name": "{{id}}", "rules": [ {{rule}} ] }""");
 
     [Fact]
     public void Correlation_finds_a_planted_effect_and_ignores_noise()
@@ -265,5 +265,18 @@ public class PipelineTests
         Assert.Equal(0.0533333, q[1], 5);
         Assert.Equal(0.0533333, q[2], 5);
         Assert.Equal(0.2, q[3], 6);
+    }
+
+    [Fact]
+    public void Every_rule_has_a_name_an_explanation_and_a_source()
+    {
+        var files = Directory.GetFiles(RulesDir(), "*.json").Where(f => !f.EndsWith(".quantiles.json"));
+        foreach (var school in files.Select(f => RuleSetJson.Parse(File.ReadAllText(f))))
+        foreach (var rule in school.Rules)
+        {
+            Assert.False(string.IsNullOrWhiteSpace(rule.Name), $"{school.Id}/{rule.Id}: no name");
+            Assert.False(string.IsNullOrWhiteSpace(rule.About), $"{school.Id}/{rule.Id}: no explanation");
+            Assert.False(string.IsNullOrWhiteSpace(rule.Source), $"{school.Id}/{rule.Id}: no source");
+        }
     }
 }

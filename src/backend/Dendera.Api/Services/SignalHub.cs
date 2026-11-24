@@ -23,11 +23,13 @@ public sealed class SignalHub(IEnumerable<ISignalProvider> providers, InfluenceS
     public IReadOnlyList<ISignalProvider> Providers { get; } = providers.ToList();
 
     /// <param name="frames">Evenly spaced instants (one for a reading).</param>
+    /// <param name="illnessOnsets">Onsets of malaise from the journal (decumbiture), UTC.</param>
     public async Task<SignalBundle> CollectAsync(
-        IReadOnlyList<DateTimeOffset> frames, double latitude, double longitude, NatalChart? natal, CancellationToken ct)
+        IReadOnlyList<DateTimeOffset> frames, double latitude, double longitude, NatalChart? natal, CancellationToken ct,
+        IReadOnlyList<DateTimeOffset>? illnessOnsets = null)
     {
         var step = frames.Count > 1 ? frames[1] - frames[0] : TimeSpan.Zero;
-        var query = new SignalQuery(frames[0], frames[^1], latitude, longitude, natal, step);
+        var query = new SignalQuery(frames[0], frames[^1], latitude, longitude, natal, step, illnessOnsets);
 
         var tasks = Providers.Select(async p =>
         {

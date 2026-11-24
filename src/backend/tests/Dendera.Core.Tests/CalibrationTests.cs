@@ -98,4 +98,23 @@ public class CalibrationTests
         Assert.Equal(heart.Score, heart.QualityScores.Values.Sum(), 6);
         Assert.Equal(0, zones.Single(z => z.Zone == "knees").Score);
     }
+
+    [Fact]
+    public void Personal_reference_is_deterministic_and_centres_the_chart_on_itself()
+    {
+        var eph = new Dendera.Core.Astro.AstronomyEngineEphemeris();
+        var school = PipelineTests.Load("melothesia");
+        // Born May 2001: Uranus, Neptune and the MC in Aquarius (the calves), a whole generation.
+        var natal = Dendera.Core.Astro.ChartCalculator.Compute(eph,
+            new Dendera.Core.Astro.BirthData(new DateTimeOffset(2001, 5, 6, 10, 0, 0, TimeSpan.Zero), 37.5, 15.07));
+        var hd = Signals.HumanDesign.Compute(eph, natal.Birth.BirthUtc);
+        var baselines = NatalBaselines.For([school], natal, () => hd.DefinedCenters);
+
+        var a = PersonalReference.Build(eph, [school], natal, hd, baselines, 37.5, 15.07, samples: 400)["melothesia"];
+        var b = PersonalReference.Build(eph, [school], natal, hd, baselines, 37.5, 15.07, samples: 400)["melothesia"];
+        Assert.Equal(a.Nodes["calves"], b.Nodes["calves"]);
+
+        // Against the person's own life, the calves' median moment is ordinary (≈ 50%), not "always rare".
+        Assert.InRange(a.Rarity("calves", a.Nodes["calves"][50])!.Value, 0.45, 0.55);
+    }
 }

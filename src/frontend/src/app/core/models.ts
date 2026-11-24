@@ -47,7 +47,8 @@ export interface ZoneContribution {
 
 export type BodyLayer =
   | 'soma' | 'systems' | 'temperament' | 'emotions' | 'mind'
-  | 'zangfu' | 'spirits' | 'substances' | 'chakras' | 'nadis';
+  | 'zangfu' | 'spirits' | 'substances' | 'chakras' | 'nadis'
+  | 'domains' | 'doshas' | 'sephiroth' | 'members';
 
 export interface ZoneActivation {
   zone: string;
@@ -188,6 +189,18 @@ export interface CatalogRule {
   quality: string | null;
   qualityLabel: string | null;
   text: string;
+  /** Short, cause first: "Pianeta retrogrado → i suoi organi". */
+  name: string;
+  /** What the rule says and why, in its tradition. */
+  about: string;
+  /** Historical source (author, work, chapter) or "convenzione dello strumento". */
+  source: string;
+}
+
+export interface CatalogLineage {
+  id: string;
+  name: string;
+  description: string;
 }
 
 export interface CatalogSchool {
@@ -206,6 +219,9 @@ export interface CatalogSchool {
   natalAmplification: number;
   /** Quantile table written by the calibration ritual: scores are rarities only when 'Calibrated'. */
   calibration: 'Calibrated' | 'Stale' | 'Missing';
+  /** Family of traditions; schools of the same lineage, or borrowing from it (parents), are not independent. */
+  lineage: CatalogLineage;
+  parents: CatalogLineage[];
   /** Reference tables of the tradition (five elements, chakras…). */
   tables: { title: string; columns: string[]; rows: string[][] }[];
   rules: CatalogRule[];
@@ -233,7 +249,8 @@ export interface Catalog {
 export const METRICS = ['energy', 'mood', 'sleep', 'focus', 'stress', 'gut', 'head', 'body'] as const;
 export type Metric = (typeof METRICS)[number];
 
-export type JournalDay = { date: string; notes: string | null } & Record<Metric, number | null>;
+/** illnessOnset: local time ("HH:mm") a malaise began that day — the decumbiture, followed for 30 days. */
+export type JournalDay = { date: string; notes: string | null; illnessOnset?: string | null } & Record<Metric, number | null>;
 
 export interface CorrelationFinding {
   metric: string;

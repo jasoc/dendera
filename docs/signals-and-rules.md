@@ -29,6 +29,17 @@ Three words, used the same way in code, API, UI and docs:
 | | `photoperiod-change` | `photoperiod-change` | \|Δ minutes/day\| / 4 | direction |
 | | `day-phase` | `day-phase` | always 1 | phase (day/night/dawn/dusk), light (day/night/twilight: Sun within ±6°) |
 | | `eclipse` | `eclipse:solar`, `eclipse:lunar` | 1 at the peak, 0 at ±15 days | type, kind |
+| | `decan` | `decan:{body}` | always 1 | body, sign, decan (1–3), face (Chaldean ruler) |
+| | `fixed-star` | `star:{star}:{body}` | cosine within 1° | star, body, sign, royal |
+| | `dignity` | `dignity:{body}` | Lilly's points / 5 (domicile 1, exaltation 0.8, detriment 1, fall 0.8) | body, sign, dignity, condition (dignified/debilitated) |
+| | `solar-hour` | `solar-hour` | always 1 | hour (0–23 local solar), watch (02-06, 06-10…) |
+| `planetary-hours` | `planetary-hour` | `planetary-hour` | always 1 (none in polar day/night) | ruler, dayRuler, hour (1–24), light |
+| `lunar-stations` | `lunar-mansion` | `lunar-mansion` | always 1 | mansion, number (1–28) |
+| | `nakshatra` | `nakshatra` | always 1 | nakshatra, number, pada, lord |
+| | `sidereal-placement` | `sidereal:{graha}` | always 1 | body (7 planets, rahu, ketu), sign (sidereal, Lahiri), nakshatra |
+| `life-times` (needs the natal chart) | `septennial` | `septennial` | always 1 | septennial, year |
+| | `profection` | `profection` | always 1 | house, sign, lord |
+| | `dasha` | `dasha` | always 1 | lord, subLord |
 | `gfz` | `geomagnetic` | `kp` | (Kp − 4) / 5: 0.2 at Kp 5 = G1 (NOAA scale), 1 at G5 | level, status |
 | `open-meteo` | `pressure` | `pressure` | (1013 − sea-level hPa) / 10 (Okuma 2015: 6–10 hPa below 1013) | — |
 | | `pressure-change` | `pressure-change` | \|Δ24h\| / 10 hPa (Kimoto 2011: drops > 5 hPa) | direction (drop/rise) |
@@ -38,9 +49,18 @@ Three words, used the same way in code, API, UI and docs:
 | | `dryness` | `dryness` | (45 − RH) / 30, only below 45% | level |
 | | `muggy` | `muggy` | grows with heat above 26 °C and humidity above 55% | level |
 | | `wind` | `wind` | (gusts − 20) / 50 km/h | level (calm/breezy/windy/strong) |
+| `noaa-swpc` | `solar-wind` | `solar-wind` | (km/s − 400) / 400 | level |
+| | `imf-bz` | `imf-bz` | −Bz / 10 nT (south only) | direction |
+| | `xray-flare` | `xray` | (log10 flux + 6) / 2: C1 0, M1 0.5, X1 1 | class |
+| `air-quality` | `air-quality` | `air:{pollutant}` | value / (2 × WHO 2021 guideline) | pollutant, level |
+| | `pollen` | `pollen:{type}` | grains / (2 × "high" count) | type |
+| | `uv` | `uv` | UV index / 11 | level |
+| `decumbiture` (journal onsets) | `illness-day` | `illness-day:{onset}` | always 1 | day, critical (Hippocrates 4, 7, 11, 14, 17, 20) |
+| | `decumbiture-moon` | `decumbiture-moon:{onset}` | cosine within 6° | moonAspect, phase (crisis/judicial), sign, day |
 | `schumann` (**derived**) | `schumann` | `schumann` | Tomsk relative index / 100 | level (latest point only) |
 | `tcm-calendar` | `solar-term` | `solar-term:{element}` | always 1 | term, season, element |
 | | `organ-clock` | `organ-clock:{organ}` | always 1 | organ, element |
+| | `ganzhi` | `ganzhi` | always 1 | yearStem, yearBranch, dayStem, dayBranch, hourBranch, dayElement, yearElement |
 | `human-design` | `hd-gate` | `hd-gate:{body}` | always 1 | body, gate, line, center, natalCenter, channel, channelCenter |
 
 Notes:
@@ -157,8 +177,10 @@ pressure, sensitivity, neutral. Any other string works but is drawn grey.
 
 ## What a score means: rarity
 
-A school's score on a node is its **rarity**: the share of moments of a reference sky in which
-that school puts a strictly lower raw sum on that node. 50% is an ordinary moment, 95% a rare
+A school's score on a node is its **rarity**: the share of reference moments in which that school
+puts a strictly lower raw sum on that node. For schools that read only the sky and the calendars the
+reference is personal: the 90 years from the person's birth on their own chart (`PersonalReference`),
+so a score reads "more solicited than in N% of your moments". 50% is an ordinary moment, 95% a rare
 one; a node nothing touches is 0, not "its usual". Per-quality scores split the rarity by each
 quality's share of the raw sum. The reference distributions are quantile tables
 (`rules/<school>.quantiles.json`) written by the calibration ritual

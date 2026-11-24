@@ -4,9 +4,11 @@
   // Rules of kind "node" run in the second pass. Rules are hypotheses: the journal tests them.
 
   "id": "tantric-yoga",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "name": "Yoga tantrico",
   "icon": "school-tantric-yoga",
+  "lineage": "tantra",
+  "parents": ["vedic"],
   "tradition": "Yoga tantrico e Hatha yoga: chakra, nadi, Kundalini; Svara yoga per i ritmi di Sole e Luna",
   "description": "Lungo la colonna corre Sushumna, il canale centrale; intorno si intrecciano Ida, la corrente lunare, e Pingala, quella solare. Dove si incrociano stanno i chakra, i centri del corpo sottile, dalla radice (Muladhara) alla sommità del capo (Sahasrara). Di giorno prevale Pingala, di notte Ida; all'alba e al tramonto si apre Sushumna. I pianeti toccano ciascuno il suo chakra, e ogni chakra governa una regione del corpo.",
   "references": [
@@ -16,9 +18,7 @@
     "Śiva Svarodaya (svara yoga): il respiro nelle nadi secondo il giorno, la notte e la metà del mese lunare",
     "David Frawley, Astrology of the Seers (1990): pianeti e chakra (sintesi moderna, non nei testi classici)"
   ],
-  "requires": [
-    "ephemeris"
-  ],
+  "requires": ["ephemeris", "lunar-stations", "life-times"],
   "baseline": "none",
   "tables": [
     {
@@ -149,7 +149,32 @@
   "saturation": 2.5,
   "rules": [
     {
+      // The Moon's nakshatra and its Vimshottari lord (Parashara): the lord's chakra after Frawley (modern synthesis,
+      // like the planet → chakra map of this school). Weight: convention.
+      "id": "nakshatra-chakra",
+      "name": "Nakshatra della Luna → il chakra del suo signore",
+      "about": "Il pianeta che governa la stazione lunare del giorno accende il proprio chakra.",
+      "source": "Parashara (signori dei nakshatra); David Frawley, pianeti e chakra (sintesi moderna)",
+      "when": { "kind": "nakshatra" },
+      "effect": { "zonesFrom": ["lord"], "weight": 0.25, "quality": "flow" },
+      "text": "Luna in {nakshatra} (pada {pada}), signore {lord}: il suo chakra"
+    },
+    {
+      // The running Vimshottari period (Parashara, BPHS): the mahadasha lord's chakra for years, the antardasha's
+      // for months. Weights: convention.
+      "id": "dasha-chakra",
+      "name": "Periodo dasha → i chakra dei suoi signori",
+      "about": "Il pianeta del periodo maggiore e quello del sotto-periodo restano in primo piano per anni e mesi.",
+      "source": "Parashara, BPHS (dasha); Frawley (chakra)",
+      "when": { "kind": "dasha" },
+      "effect": { "zonesFrom": ["lord", "subLord"], "weight": 0.3, "quality": "sensitivity" },
+      "text": "Dasha di {lord}, sotto-periodo di {subLord}: i loro chakra in primo piano"
+    },
+    {
       "id": "day-pingala",
+      "name": "Giorno → Pingala, la nadi solare",
+      "about": "Di giorno prevale la corrente solare, a destra: calore e azione.",
+      "source": "Shiva Swarodaya",
       "when": {
         "kind": "day-phase",
         "tags": {
@@ -169,6 +194,9 @@
     },
     {
       "id": "night-ida",
+      "name": "Notte → Ida, la nadi lunare",
+      "about": "Di notte prevale la corrente lunare, a sinistra: freschezza e ricettività.",
+      "source": "Shiva Swarodaya",
       "when": {
         "kind": "day-phase",
         "tags": {
@@ -188,6 +216,9 @@
     },
     {
       "id": "sandhya-sushumna",
+      "name": "Alba e tramonto → Sushumna",
+      "about": "Nei momenti di passaggio, il sandhya, le due correnti si equilibrano e si apre il canale centrale: l'ora della meditazione.",
+      "source": "Shiva Swarodaya; Ṣaṭ-cakra-nirūpaṇa",
       "when": {
         "kind": "day-phase",
         "tags": {
@@ -207,6 +238,9 @@
     },
     {
       "id": "paksha-ida",
+      "name": "Luna crescente → Ida",
+      "about": "Nella metà chiara del mese lunare la corrente lunare è favorita.",
+      "source": "Shiva Swarodaya",
       "when": {
         "kind": "lunar-phase",
         "tags": {
@@ -226,6 +260,9 @@
     },
     {
       "id": "paksha-pingala",
+      "name": "Luna calante → Pingala",
+      "about": "Nella metà scura del mese lunare è favorita la corrente solare.",
+      "source": "Shiva Swarodaya",
       "when": {
         "kind": "lunar-phase",
         "tags": {
@@ -245,6 +282,9 @@
     },
     {
       "id": "transit-chakra",
+      "name": "Pianeta in aspetto con un punto natale → il chakra del pianeta",
+      "about": "Il pianeta che oggi tocca un punto del tuo tema muove l'energia del chakra che governa.",
+      "source": "David Frawley, Astrology of the Seers (sintesi moderna di Jyotish e Tantra)",
       "when": {
         "kind": "transit-aspect"
       },
@@ -270,6 +310,9 @@
     },
     {
       "id": "retrograde-chakra",
+      "name": "Pianeta retrogrado → il suo chakra, verso l'interno",
+      "about": "L'energia del chakra del pianeta si ritira come il suo moto.",
+      "source": "Frawley (sintesi moderna)",
       "when": {
         "kind": "retrograde"
       },
@@ -284,6 +327,9 @@
     },
     {
       "id": "station-chakra",
+      "name": "Pianeta stazionario → il suo chakra, concentrato",
+      "about": "Nel punto di svolta del pianeta il suo chakra si concentra.",
+      "source": "Frawley (sintesi moderna)",
       "when": {
         "kind": "station",
         "minIntensity": 0.2
@@ -299,6 +345,9 @@
     },
     {
       "id": "eclipse-ajna",
+      "name": "Eclissi → Ajna",
+      "about": "Sole e Luna sono i due occhi di Ajna, dove Ida e Pingala si uniscono: l'eclissi li oscura.",
+      "source": "Ṣaṭ-cakra-nirūpaṇa (Ajna, Sole e Luna)",
       "when": {
         "kind": "eclipse"
       },
@@ -313,6 +362,9 @@
     },
     {
       "id": "region-muladhara",
+      "name": "Muladhara attivo → perineo, gambe, ossa",
+      "about": "Il chakra della radice, elemento terra, sostiene ciò che è solido e la base del corpo.",
+      "source": "Ṣaṭ-cakra-nirūpaṇa",
       "when": {
         "kind": "node",
         "tags": {
@@ -334,6 +386,9 @@
     },
     {
       "id": "region-svadhisthana",
+      "name": "Svadhisthana attivo → bacino, reni",
+      "about": "Il chakra dell'acqua governa il bacino e i liquidi.",
+      "source": "Ṣaṭ-cakra-nirūpaṇa",
       "when": {
         "kind": "node",
         "tags": {
@@ -354,6 +409,9 @@
     },
     {
       "id": "region-manipura",
+      "name": "Manipura attivo → plesso solare, stomaco, fegato",
+      "about": "Il chakra del fuoco all'ombelico è il fuoco digestivo.",
+      "source": "Ṣaṭ-cakra-nirūpaṇa",
       "when": {
         "kind": "node",
         "tags": {
@@ -375,6 +433,9 @@
     },
     {
       "id": "region-anahata",
+      "name": "Anahata attivo → cuore, polmoni",
+      "about": "Il chakra dell'aria nel petto governa cuore e respiro.",
+      "source": "Ṣaṭ-cakra-nirūpaṇa",
       "when": {
         "kind": "node",
         "tags": {
@@ -395,6 +456,9 @@
     },
     {
       "id": "region-vishuddha",
+      "name": "Vishuddha attivo → gola, collo, braccia",
+      "about": "Il chakra dell'etere alla gola governa la voce.",
+      "source": "Ṣaṭ-cakra-nirūpaṇa",
       "when": {
         "kind": "node",
         "tags": {
@@ -415,6 +479,9 @@
     },
     {
       "id": "region-ajna",
+      "name": "Ajna attivo → fronte, occhi",
+      "about": "Il chakra del comando, tra le sopracciglia.",
+      "source": "Ṣaṭ-cakra-nirūpaṇa",
       "when": {
         "kind": "node",
         "tags": {
@@ -435,6 +502,9 @@
     },
     {
       "id": "region-sahasrara",
+      "name": "Sahasrara attivo → sommità del capo",
+      "about": "Il loto dai mille petali, oltre gli elementi.",
+      "source": "Ṣaṭ-cakra-nirūpaṇa",
       "when": {
         "kind": "node",
         "tags": {
@@ -454,6 +524,9 @@
     },
     {
       "id": "sushumna-rises",
+      "name": "Sushumna aperta → Sahasrara",
+      "about": "Quando il canale centrale è aperto l'energia può salire fino alla sommità.",
+      "source": "Ṣaṭ-cakra-nirūpaṇa; Hatha Yoga Pradipika",
       "when": {
         "kind": "node",
         "tags": {
@@ -474,6 +547,9 @@
     },
     {
       "id": "ida-mind",
+      "name": "Ida attiva → immaginazione, Ajna",
+      "about": "La corrente lunare nutre la mente e le immagini.",
+      "source": "Shiva Swarodaya",
       "when": {
         "kind": "node",
         "tags": {
@@ -494,6 +570,9 @@
     },
     {
       "id": "pingala-body",
+      "name": "Pingala attiva → vitalità, Ajna",
+      "about": "La corrente solare nutre il corpo e l'azione.",
+      "source": "Shiva Swarodaya",
       "when": {
         "kind": "node",
         "tags": {

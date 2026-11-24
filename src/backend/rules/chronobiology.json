@@ -1,0 +1,56 @@
+{
+  // School: chronobiology (modern science), the control group: circadian and seasonal rhythms of light. Same
+  // lineage as Biometeorology. Numbers are conventions until the research pass cites the reviews.
+  // Zones: Dendera.Core/Rules/BodyZones.cs.
+  "id": "chronobiology",
+  "version": "1.0.0",
+  "name": "Cronobiologia",
+  "icon": "school-chronobiology",
+  "lineage": "modern-science",
+  "parents": [],
+  "tradition": "Cronobiologia moderna: ritmi circadiani e stagionali",
+  "description": "L'orologio interno segue la luce: di notte cresce la melatonina e il corpo chiede sonno, al risveglio il cortisolo dà la spinta del mattino, nel primo pomeriggio la vigilanza cala, nelle giornate corte l'umore e l'energia scendono. La scienza moderna, come termine di confronto per le tradizioni antiche.",
+  "references": [
+    "Czeisler e Gooley, Sleep and circadian rhythms in humans (Cold Spring Harbor Symposia, 2007)",
+    "Roenneberg et al., studi sul cronotipo e sul jet lag sociale (Current Biology, 2003–2012)",
+    "Rosenthal et al., Seasonal affective disorder (Archives of General Psychiatry, 1984)",
+    "Cajochen et al., Evidence that the lunar cycle influences human sleep (Current Biology 23(15), 2013)"
+  ],
+  "requires": ["ephemeris"],
+  "baseline": "none",
+  "natalAmplification": 0,
+  "saturation": 2.5,
+
+  "rules": [
+    { "id": "night-melatonin", "name": "Notte biologica → sonno",
+      "about": "Di notte la melatonina sale e il corpo chiede sonno.",
+      "source": "Czeisler e Gooley, Cold Spring Harbor Symposia (2007) — da verificare", "when": { "kind": "solar-hour", "tags": { "watch": ["22-02", "02-06"] } },
+      "effect": { "zones": ["sleep"], "weight": 0.6, "quality": "inward" },
+      "text": "Notte biologica ({detail}): melatonina alta, il corpo chiede sonno" },
+    { "id": "morning-cortisol", "name": "Primo mattino → vitalità",
+      "about": "Al risveglio il cortisolo ha il suo picco.",
+      "source": "Risposta del cortisolo al risveglio (letteratura cronobiologica)", "when": { "kind": "solar-hour", "tags": { "hour": ["6", "7", "8"] } },
+      "effect": { "zones": ["vitality"], "weight": 0.4, "quality": "flow" },
+      "text": "Mattino ({detail}): il picco del cortisolo al risveglio" },
+    { "id": "afternoon-dip", "name": "Primo pomeriggio → vitalità e lucidità in calo",
+      "about": "Dopo mezzogiorno la vigilanza cala, indipendentemente dal pasto.",
+      "source": "Letteratura cronobiologica sul calo post-prandiale", "when": { "kind": "solar-hour", "tags": { "hour": ["13", "14", "15"] } },
+      "effect": { "zones": ["vitality", "reason"], "weight": 0.3, "quality": "depletion" },
+      "text": "Primo pomeriggio ({detail}): il calo della vigilanza" },
+    { "id": "short-days", "name": "Giornate corte → umore, vitalità, sonno",
+      "about": "Meno luce, meno energia e umore più basso.",
+      "source": "Rosenthal et al., Archives of General Psychiatry 41 (1984)", "when": { "kind": "photoperiod", "minIntensity": 0.05 },
+      "effect": { "zones": ["mood", "vitality", "sleep"], "weight": 0.5, "quality": "depletion" },
+      "text": "Giornate corte ({detail}): meno luce, umore ed energia più bassi" },
+    { "id": "light-change", "name": "La luce cambia in fretta → sonno",
+      "about": "L'orologio interno si riadatta.",
+      "source": "Convenzione dello strumento", "when": { "kind": "photoperiod-change", "minIntensity": 0.3 },
+      "effect": { "zones": ["sleep"], "weight": 0.3, "quality": "pressure" },
+      "text": "La luce cambia in fretta ({detail}): l'orologio interno si riadatta" },
+    { "id": "full-moon-sleep", "name": "Luna piena → sonno più breve",
+      "about": "A Luna piena il sonno è più breve e leggero.",
+      "source": "Cajochen et al., Current Biology 23(15), 2013", "when": { "kind": "lunar-phase", "tags": { "phase": ["full"] } },
+      "effect": { "zones": ["sleep"], "weight": 0.2, "quality": "agitation" },
+      "text": "Luna piena: sonno più breve e leggero (Cajochen 2013)" }
+  ]
+}

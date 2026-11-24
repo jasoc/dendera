@@ -1,7 +1,9 @@
 import { Component, computed, inject } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { CatalogStore, PROVIDER_KIND } from '../core/catalog-store';
+import { CatalogSchool } from '../core/models';
 import { ProfileStore } from '../core/profile-store';
+import { ConsensusStore } from '../core/consensus-store';
 import { Icon } from '../components/icon';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
@@ -30,6 +32,15 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 
     <span class="kicker consequences section-kicker"><app-icon name="consequences" [size]="15" /> Conseguenze · chi interpreta</span>
     <h2 class="section-title">Scuole <small>{{ catalog.schools().length }}</small></h2>
+    <div class="consensus">
+      <mat-slide-toggle [checked]="consensus.mode() === 'lineage'"
+                        (change)="consensus.set($event.checked ? 'lineage' : 'plain')">
+        Un voto per famiglia di tradizioni
+      </mat-slide-toggle>
+      <p class="muted small">Spento: su ogni nodo vale la media delle scuole attive che ne parlano, una scuola un voto.
+        Acceso: le scuole della stessa famiglia (o che prendono l'una dall'altra) contano insieme come un voto solo, così
+        tre scuole nate dalla stessa idea non pesano più di una tradizione indipendente.</p>
+    </div>
     <div class="cards">
       @for (s of catalog.schools(); track s.id) {
         <article class="panel card" [class.off]="store.current() && !store.schools().includes(s.id)">
@@ -38,6 +49,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
             <div>
               <h3>{{ s.name }}</h3>
               <p class="muted tradition">{{ s.tradition }}</p>
+              <p class="muted lineage" [matTooltip]="s.lineage.description">Famiglia: {{ s.lineage.name }}@if (s.parents.length) {
+                · prende da {{ parentNames(s) }}}</p>
               @if (s.calibration !== 'Calibrated') {
                 <span class="recal" matTooltip="La tabella di rarità non corrisponde più alle regole: finché non si ripete il rituale di calibrazione vale la scala provvisoria">da ricalibrare</span>
               }
@@ -210,6 +223,9 @@ import { MatTooltipModule } from '@angular/material/tooltip';
     .card-head h3 { margin: 0; font-size: 16px; }
     .big-icon { color: var(--gold); }
     .tradition { margin: 2px 0 0; font-size: 12.5px; }
+    .lineage { margin: 2px 0 0; font-size: 12px; }
+    .consensus { margin: 0 0 16px; }
+    .consensus p { margin: 4px 0 0; max-width: 70ch; }
     .recal { display: inline-block; margin-top: 4px; padding: 1px 8px; border-radius: 999px; font-size: 11.5px;
       color: var(--mat-sys-on-error-container); background: var(--mat-sys-error-container); }
     h4 { font-size: 11.5px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin: 14px 0 6px; font-weight: 500; }
@@ -236,6 +252,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 export class Schools {
   protected readonly catalog = inject(CatalogStore);
   protected readonly store = inject(ProfileStore);
+  protected readonly consensus = inject(ConsensusStore);
 
   private readonly readersById = computed(() => {
     const map = new Map<string, { id: string; name: string; icon: string }[]>();
@@ -264,4 +281,8 @@ export class Schools {
   protected providerKind = (k: string) => PROVIDER_KIND[k] ?? k;
   protected zoneNames = (zones: { label: string }[]) => zones.map((z) => z.label).join(', ');
   protected time = (iso: string) => new Date(iso).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' });
+
+  protected parentNames(s: CatalogSchool): string {
+    return s.parents.map((p) => p.name).join(', ');
+  }
 }

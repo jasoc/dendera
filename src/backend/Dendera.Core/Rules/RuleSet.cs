@@ -24,6 +24,12 @@ public sealed record RuleSet
     /// <summary>Italian, short: which tradition the school comes from.</summary>
     public string Tradition { get; init; } = "";
 
+    /// <summary>Family of traditions the school belongs to (<see cref="Lineages"/>).</summary>
+    public string Lineage { get; init; } = "";
+
+    /// <summary>Lineages the school borrows from: agreement with them is not independent (<see cref="Lineages.Independent"/>).</summary>
+    public List<string> Parents { get; init; } = new();
+
     /// <summary>Sources of the correspondences (books, authors).</summary>
     public List<string> References { get; init; } = new();
 
@@ -86,6 +92,15 @@ public sealed record Rule
     public required RuleEffect Effect { get; init; }
     /// <summary>Explanation template; {tag} placeholders are replaced with localized tag values.</summary>
     public string Text { get; init; } = "";
+
+    /// <summary>Italian, short, cause first: "Pianeta retrogrado → i suoi organi, verso l'interno".</summary>
+    public string Name { get; init; } = "";
+
+    /// <summary>Italian, one or two sentences: what the rule says and why, in its tradition.</summary>
+    public string About { get; init; } = "";
+
+    /// <summary>The historical source of the rule (author, work, chapter), or "convenzione dello strumento".</summary>
+    public string Source { get; init; } = "";
 }
 
 public sealed record RuleCondition
@@ -149,6 +164,12 @@ public static class RuleSetJson
             .ToList();
         if (badNodes.Count > 0)
             throw new InvalidDataException($"Rule set '{set.Id}' has node rules on unknown nodes: {string.Join(", ", badNodes)}");
+
+        if (!Lineages.IsKnown(set.Lineage))
+            throw new InvalidDataException($"Rule set '{set.Id}' has unknown lineage '{set.Lineage}'");
+        var badParents = set.Parents.Where(p => !Lineages.IsKnown(p) || p == set.Lineage).ToList();
+        if (badParents.Count > 0)
+            throw new InvalidDataException($"Rule set '{set.Id}' has invalid parents: {string.Join(", ", badParents)}");
 
         if (!BaselineStrategies.All.Contains(set.Baseline))
             throw new InvalidDataException($"Rule set '{set.Id}' has unknown baseline '{set.Baseline}'");

@@ -5,9 +5,11 @@
   // Rules are hypotheses: the journal + correlation engine tests them. Nodes: Dendera.Core/Rules/BodyZones.cs.
 
   "id": "tcm",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "name": "Medicina tradizionale cinese",
   "icon": "school-tcm",
+  "lineage": "chinese-classics",
+  "parents": [],
   "tradition": "Medicina classica cinese: zang-fu e meridiani, cinque elementi, sette emozioni, cinque Shen, sei eccessi",
   "description": "Il corpo è fatto di funzioni, non di pezzi: dodici organi zang-fu legati dai meridiani, ciascuno con il suo elemento, la sua emozione e il suo spirito. Ogni stagione e ogni ora mettono in primo piano un organo; il clima esterno (Vento, Freddo, Calore, Calore estivo, Umidità, Secchezza) entra dagli organi più esposti. Un organo sollecitato muove l'emozione e lo Shen che ospita, i suoi organi di senso e i suoi tessuti, e attraverso i cicli Sheng e Ke nutre o sottomette gli altri.",
   "references": [
@@ -19,11 +21,7 @@
     "Huainanzi (II sec. a.C.): i 24 termini solari",
     "Ziwu liuzhu: l'orologio dei meridiani (agopuntura classica)"
   ],
-  "requires": [
-    "tcm-calendar",
-    "open-meteo",
-    "ephemeris"
-  ],
+  "requires": ["tcm-calendar", "open-meteo", "ephemeris"],
   "baseline": "none",
   "tables": [
     {
@@ -229,6 +227,10 @@
     }
   ],
   "correspondences": {
+    // Heavenly stems → organs (Najia), read by the "day-stem" rule.
+    "stem-jia": ["zf-gallbladder"], "stem-yi": ["zf-liver"], "stem-bing": ["zf-small-intestine"],
+    "stem-ding": ["zf-heart"], "stem-wu": ["zf-stomach"], "stem-ji": ["zf-spleen"], "stem-geng": ["zf-large-intestine"],
+    "stem-xin": ["zf-lung"], "stem-ren": ["zf-bladder"], "stem-gui": ["zf-kidney"],
     "liver": [
       "zf-liver"
     ],
@@ -274,7 +276,22 @@
   // convention of the instrument (calibration plan, step 1 F). Unschuld & Tessenow, Huang Di Nei Jing Su Wen (2011).
   "rules": [
     {
+      // Najia (stems to organs): the day's heavenly stem opens its organ's meridian — Jia gallbladder, Yi liver,
+      // Bing small intestine, Ding heart, Wu stomach, Ji spleen, Geng large intestine, Xin lung, Ren bladder,
+      // Gui kidney (Ziwu liuzhu; Xu Feng, Zhenjiu daquan, 1439 — to check). Weight: convention, below the season.
+      "id": "day-stem",
+      "name": "Tronco celeste del giorno → il meridiano del suo organo",
+      "about": "Nel calendario sessagesimale ogni giorno ha un tronco celeste; il metodo Najia associa ogni tronco a un organo, il cui meridiano quel giorno è «aperto».",
+      "source": "Letteratura Ziwu liuzhu (He Ruoyu, 1153; Xu Feng, Zhenjiu daquan, 1439) — edizione da verificare",
+      "when": { "kind": "ganzhi" },
+      "effect": { "zonesFrom": ["dayStem"], "weight": 0.2, "quality": "flow" },
+      "text": "Giorno {dayStem} ({dayBranch}): il tronco del giorno apre il meridiano del suo organo"
+    },
+    {
       "id": "season-wood",
+      "name": "Stagione del Legno (primavera) → Fegato e Vescica biliare",
+      "about": "Dal termine solare corrente: la stagione del Legno mette in primo piano gli organi del suo elemento.",
+      "source": "Huangdi Neijing Suwen, cap. 2 e 4",
       "when": {
         "kind": "solar-term",
         "tags": {
@@ -295,6 +312,9 @@
     },
     {
       "id": "season-fire",
+      "name": "Stagione del Fuoco (estate) → Cuore, Intestino tenue, Pericardio e Triplice riscaldatore",
+      "about": "Dal termine solare corrente: la stagione del Fuoco mette in primo piano gli organi del suo elemento.",
+      "source": "Huangdi Neijing Suwen, cap. 2 e 4",
       "when": {
         "kind": "solar-term",
         "tags": {
@@ -317,6 +337,9 @@
     },
     {
       "id": "season-earth",
+      "name": "Stagione del Terra (tarda estate) → Milza e Stomaco",
+      "about": "Dal termine solare corrente: la stagione del Terra mette in primo piano gli organi del suo elemento.",
+      "source": "Huangdi Neijing Suwen, cap. 2 e 4",
       "when": {
         "kind": "solar-term",
         "tags": {
@@ -337,6 +360,9 @@
     },
     {
       "id": "season-metal",
+      "name": "Stagione del Metallo (autunno) → Polmone e Intestino crasso",
+      "about": "Dal termine solare corrente: la stagione del Metallo mette in primo piano gli organi del suo elemento.",
+      "source": "Huangdi Neijing Suwen, cap. 2 e 4",
       "when": {
         "kind": "solar-term",
         "tags": {
@@ -357,6 +383,9 @@
     },
     {
       "id": "season-water",
+      "name": "Stagione del Acqua (inverno) → Rene e Vescica",
+      "about": "Dal termine solare corrente: la stagione del Acqua mette in primo piano gli organi del suo elemento.",
+      "source": "Huangdi Neijing Suwen, cap. 2 e 4",
       "when": {
         "kind": "solar-term",
         "tags": {
@@ -377,6 +406,9 @@
     },
     {
       "id": "season-yang",
+      "name": "Primavera ed estate → lo Yang cresce",
+      "about": "Nella metà calda dell'anno lo Yang si espande.",
+      "source": "Huangdi Neijing Suwen, cap. 2 (le quattro stagioni)",
       "when": {
         "kind": "solar-term",
         "tags": {
@@ -403,6 +435,9 @@
     },
     {
       "id": "season-yin",
+      "name": "Autunno e inverno → lo Yin cresce",
+      "about": "Nella metà fredda dell'anno lo Yin si raccoglie.",
+      "source": "Huangdi Neijing Suwen, cap. 2",
       "when": {
         "kind": "solar-term",
         "tags": {
@@ -429,6 +464,9 @@
     },
     {
       "id": "day-yang",
+      "name": "Giorno → Yang",
+      "about": "Il giorno è il tempo dello Yang.",
+      "source": "Huangdi Neijing Suwen, cap. 3 (il ciclo dello Yang nel giorno)",
       "when": {
         "kind": "day-phase",
         "tags": {
@@ -448,6 +486,9 @@
     },
     {
       "id": "night-yin",
+      "name": "Notte → Yin",
+      "about": "La notte è il tempo dello Yin.",
+      "source": "Huangdi Neijing Suwen, cap. 3",
       "when": {
         "kind": "day-phase",
         "tags": {
@@ -468,6 +509,9 @@
     {
       // The 24-hour organ clock as a fixed table (子午流注) is later acupuncture tradition, not the Neijing.
       "id": "organ-clock",
+      "name": "Ora solare → l'organo nelle sue due ore di massimo flusso",
+      "about": "Il Qi percorre i dodici meridiani in ventiquattro ore: ogni organo ha due ore di pieno.",
+      "source": "Tradizione Ziwu liuzhu (successiva al Neijing); Huangdi Neijing Lingshu, cap. 16 (il flusso del Qi nutritivo)",
       "when": {
         "kind": "organ-clock"
       },
@@ -482,6 +526,9 @@
     },
     {
       "id": "excess-wind",
+      "name": "Vento → Fegato, testa, tendini, pelle",
+      "about": "Il Vento, «capo delle cento malattie», entra dalla pelle e sale in alto.",
+      "source": "Huangdi Neijing Suwen, cap. 42 (il Vento)",
       "when": {
         "kind": "wind",
         "minIntensity": 0.2
@@ -500,6 +547,9 @@
     },
     {
       "id": "excess-cold",
+      "name": "Freddo → Rene, Vescica, tendini, ossa",
+      "about": "Il Freddo contrae e ristagna, e ferisce l'organo dell'inverno.",
+      "source": "Huangdi Neijing Suwen, cap. 5; Zhang Zhongjing, Shanghan Lun",
       "when": {
         "kind": "temperature",
         "tags": {
@@ -523,6 +573,9 @@
     },
     {
       "id": "cold-injures-yang",
+      "name": "Freddo → consuma lo Yang",
+      "about": "Il Freddo, che è Yin, ferisce lo Yang.",
+      "source": "Huangdi Neijing Suwen, cap. 5",
       "when": {
         "kind": "temperature",
         "tags": {
@@ -543,6 +596,9 @@
     },
     {
       "id": "excess-heat",
+      "name": "Calore → Cuore, Shen",
+      "about": "Il Calore agita il Cuore e la mente che vi abita.",
+      "source": "Huangdi Neijing Suwen, cap. 5",
       "when": {
         "kind": "temperature",
         "tags": {
@@ -564,6 +620,9 @@
     },
     {
       "id": "heat-injures-yin",
+      "name": "Calore → consuma Yin e Liquidi",
+      "about": "Il Calore, che è Yang, asciuga lo Yin.",
+      "source": "Huangdi Neijing Suwen, cap. 5",
       "when": {
         "kind": "temperature",
         "tags": {
@@ -585,6 +644,9 @@
     },
     {
       "id": "excess-summer-heat",
+      "name": "Afa (calore estivo) → Cuore, Milza, Qi, Liquidi",
+      "about": "Il calore umido dell'estate disperde il Qi e appesantisce la Milza.",
+      "source": "Huangdi Neijing Suwen, cap. 3; Chen Wuze, Sanyin fang (1174)",
       "when": {
         "kind": "muggy",
         "minIntensity": 0.2
@@ -604,6 +666,9 @@
     },
     {
       "id": "excess-damp",
+      "name": "Umidità → Milza, Stomaco, muscoli",
+      "about": "L'Umidità è pesante e ristagna: ferisce l'organo della Terra.",
+      "source": "Huangdi Neijing Suwen, cap. 5",
       "when": {
         "kind": "humidity",
         "minIntensity": 0.3
@@ -622,6 +687,9 @@
     },
     {
       "id": "excess-dryness",
+      "name": "Secchezza → Polmone, naso, pelle",
+      "about": "La Secchezza ferisce il Polmone, organo dell'autunno, e asciuga i Liquidi.",
+      "source": "Huangdi Neijing Suwen, cap. 5",
       "when": {
         "kind": "dryness",
         "minIntensity": 0.2
@@ -640,6 +708,9 @@
     },
     {
       "id": "emotion-anger",
+      "name": "Fegato sollecitato → Collera",
+      "about": "Il Fegato ospita la Collera, che fa salire il Qi.",
+      "source": "Huangdi Neijing Suwen, cap. 5 e 39",
       "when": {
         "kind": "node",
         "tags": {
@@ -659,6 +730,9 @@
     },
     {
       "id": "emotion-joy",
+      "name": "Cuore sollecitato → Gioia",
+      "about": "Il Cuore ospita la Gioia; in eccesso rallenta il Qi.",
+      "source": "Huangdi Neijing Suwen, cap. 5 e 39",
       "when": {
         "kind": "node",
         "tags": {
@@ -678,6 +752,9 @@
     },
     {
       "id": "emotion-fright-heart",
+      "name": "Cuore sollecitato → Spavento",
+      "about": "Lo Spavento disperde il Qi del Cuore.",
+      "source": "Huangdi Neijing Suwen, cap. 39",
       "when": {
         "kind": "node",
         "tags": {
@@ -697,6 +774,9 @@
     },
     {
       "id": "emotion-pensiveness",
+      "name": "Milza sollecitata → Rimuginio",
+      "about": "Il pensiero ossessivo annoda il Qi della Milza.",
+      "source": "Huangdi Neijing Suwen, cap. 5 e 39",
       "when": {
         "kind": "node",
         "tags": {
@@ -716,6 +796,9 @@
     },
     {
       "id": "emotion-grief",
+      "name": "Polmone sollecitato → Tristezza",
+      "about": "La Tristezza consuma il Qi del Polmone.",
+      "source": "Huangdi Neijing Suwen, cap. 5 e 39",
       "when": {
         "kind": "node",
         "tags": {
@@ -735,6 +818,9 @@
     },
     {
       "id": "emotion-worry",
+      "name": "Polmone sollecitato → Preoccupazione",
+      "about": "La Preoccupazione annoda il Qi del Polmone.",
+      "source": "Huangdi Neijing Lingshu, cap. 8",
       "when": {
         "kind": "node",
         "tags": {
@@ -754,6 +840,9 @@
     },
     {
       "id": "emotion-fear",
+      "name": "Rene sollecitato → Paura",
+      "about": "La Paura fa scendere il Qi e ferisce il Rene.",
+      "source": "Huangdi Neijing Suwen, cap. 5 e 39",
       "when": {
         "kind": "node",
         "tags": {
@@ -773,6 +862,9 @@
     },
     {
       "id": "emotion-fright-kidney",
+      "name": "Rene sollecitato → Spavento",
+      "about": "Lo Spavento disperde il Qi del Rene.",
+      "source": "Huangdi Neijing Suwen, cap. 39",
       "when": {
         "kind": "node",
         "tags": {
@@ -792,6 +884,9 @@
     },
     {
       "id": "spirit-shen",
+      "name": "Cuore sollecitato → Shen",
+      "about": "Il Cuore ospita lo Shen, lo spirito.",
+      "source": "Huangdi Neijing Suwen, cap. 23; Huangdi Neijing Lingshu, cap. 8",
       "when": {
         "kind": "node",
         "tags": {
@@ -811,6 +906,9 @@
     },
     {
       "id": "spirit-hun",
+      "name": "Fegato sollecitato → Hun",
+      "about": "Il Fegato ospita lo Hun, l'anima eterea.",
+      "source": "Huangdi Neijing Suwen, cap. 23; Huangdi Neijing Lingshu, cap. 8",
       "when": {
         "kind": "node",
         "tags": {
@@ -830,6 +928,9 @@
     },
     {
       "id": "spirit-po",
+      "name": "Polmone sollecitato → Po",
+      "about": "Il Polmone ospita il Po, l'anima corporea.",
+      "source": "Huangdi Neijing Suwen, cap. 23; Huangdi Neijing Lingshu, cap. 8",
       "when": {
         "kind": "node",
         "tags": {
@@ -849,6 +950,9 @@
     },
     {
       "id": "spirit-yi",
+      "name": "Milza sollecitata → Yi",
+      "about": "La Milza ospita lo Yi, l'intento.",
+      "source": "Huangdi Neijing Suwen, cap. 23; Huangdi Neijing Lingshu, cap. 8",
       "when": {
         "kind": "node",
         "tags": {
@@ -868,6 +972,9 @@
     },
     {
       "id": "spirit-zhi",
+      "name": "Rene sollecitato → Zhi",
+      "about": "Il Rene ospita lo Zhi, la volontà.",
+      "source": "Huangdi Neijing Suwen, cap. 23; Huangdi Neijing Lingshu, cap. 8",
       "when": {
         "kind": "node",
         "tags": {
@@ -887,6 +994,9 @@
     },
     {
       "id": "opens-liver",
+      "name": "Fegato sollecitato → occhi, tendini",
+      "about": "Il Fegato si apre negli occhi e nutre i tendini.",
+      "source": "Huangdi Neijing Suwen, cap. 4 e 5",
       "when": {
         "kind": "node",
         "tags": {
@@ -907,6 +1017,9 @@
     },
     {
       "id": "opens-heart",
+      "name": "Cuore sollecitato → lingua, vasi",
+      "about": "Il Cuore si apre nella lingua e governa i vasi.",
+      "source": "Huangdi Neijing Suwen, cap. 4 e 5",
       "when": {
         "kind": "node",
         "tags": {
@@ -927,6 +1040,9 @@
     },
     {
       "id": "opens-spleen",
+      "name": "Milza sollecitata → bocca, muscoli",
+      "about": "La Milza si apre nella bocca e nutre i muscoli.",
+      "source": "Huangdi Neijing Suwen, cap. 4 e 5",
       "when": {
         "kind": "node",
         "tags": {
@@ -947,6 +1063,9 @@
     },
     {
       "id": "opens-lung",
+      "name": "Polmone sollecitato → naso, pelle",
+      "about": "Il Polmone si apre nel naso e governa la pelle.",
+      "source": "Huangdi Neijing Suwen, cap. 4 e 5",
       "when": {
         "kind": "node",
         "tags": {
@@ -967,6 +1086,9 @@
     },
     {
       "id": "opens-kidney",
+      "name": "Rene sollecitato → orecchie, ossa",
+      "about": "Il Rene si apre nelle orecchie e governa le ossa.",
+      "source": "Huangdi Neijing Suwen, cap. 4 e 5",
       "when": {
         "kind": "node",
         "tags": {
@@ -987,6 +1109,9 @@
     },
     {
       "id": "substance-qi-lung",
+      "name": "Polmone sollecitato → Qi",
+      "about": "Il Polmone governa il Qi e il respiro.",
+      "source": "Huangdi Neijing Suwen, cap. 8",
       "when": {
         "kind": "node",
         "tags": {
@@ -1006,6 +1131,9 @@
     },
     {
       "id": "substance-qi-spleen",
+      "name": "Milza sollecitata → Qi",
+      "about": "La Milza trasforma il nutrimento in Qi.",
+      "source": "Huangdi Neijing Suwen, cap. 8",
       "when": {
         "kind": "node",
         "tags": {
@@ -1025,6 +1153,9 @@
     },
     {
       "id": "substance-xue-heart",
+      "name": "Cuore sollecitato → Sangue",
+      "about": "Il Cuore governa il Sangue.",
+      "source": "Huangdi Neijing Suwen, cap. 44",
       "when": {
         "kind": "node",
         "tags": {
@@ -1044,6 +1175,9 @@
     },
     {
       "id": "substance-xue-liver",
+      "name": "Fegato sollecitato → Sangue",
+      "about": "Il Fegato conserva il Sangue.",
+      "source": "Huangdi Neijing Suwen, cap. 10",
       "when": {
         "kind": "node",
         "tags": {
@@ -1063,6 +1197,9 @@
     },
     {
       "id": "substance-jing",
+      "name": "Rene sollecitato → Jing",
+      "about": "Il Rene conserva l'Essenza.",
+      "source": "Huangdi Neijing Suwen, cap. 1 e 9",
       "when": {
         "kind": "node",
         "tags": {
@@ -1082,6 +1219,9 @@
     },
     {
       "id": "sheng-liver",
+      "name": "Fegato sollecitato → Cuore (ciclo Sheng)",
+      "about": "Ciclo di generazione: il Legno nutre il Fuoco.",
+      "source": "Nanjing (Classico delle difficoltà), difficoltà 18 e 75; Huangdi Neijing Suwen, cap. 5",
       "when": {
         "kind": "node",
         "tags": {
@@ -1102,6 +1242,9 @@
     },
     {
       "id": "sheng-heart",
+      "name": "Cuore sollecitato → Milza (ciclo Sheng)",
+      "about": "Ciclo di generazione: il Fuoco nutre la Terra.",
+      "source": "Nanjing (Classico delle difficoltà), difficoltà 18 e 75; Huangdi Neijing Suwen, cap. 5",
       "when": {
         "kind": "node",
         "tags": {
@@ -1122,6 +1265,9 @@
     },
     {
       "id": "sheng-spleen",
+      "name": "Milza sollecitato → Polmone (ciclo Sheng)",
+      "about": "Ciclo di generazione: la Terra nutre il Metallo.",
+      "source": "Nanjing (Classico delle difficoltà), difficoltà 18 e 75; Huangdi Neijing Suwen, cap. 5",
       "when": {
         "kind": "node",
         "tags": {
@@ -1142,6 +1288,9 @@
     },
     {
       "id": "sheng-lung",
+      "name": "Polmone sollecitato → Rene (ciclo Sheng)",
+      "about": "Ciclo di generazione: il Metallo nutre l'Acqua.",
+      "source": "Nanjing (Classico delle difficoltà), difficoltà 18 e 75; Huangdi Neijing Suwen, cap. 5",
       "when": {
         "kind": "node",
         "tags": {
@@ -1162,6 +1311,9 @@
     },
     {
       "id": "sheng-kidney",
+      "name": "Rene sollecitato → Fegato (ciclo Sheng)",
+      "about": "Ciclo di generazione: l'Acqua nutre il Legno.",
+      "source": "Nanjing (Classico delle difficoltà), difficoltà 18 e 75; Huangdi Neijing Suwen, cap. 5",
       "when": {
         "kind": "node",
         "tags": {
@@ -1182,6 +1334,9 @@
     },
     {
       "id": "ke-liver",
+      "name": "Fegato in eccesso → Milza (ciclo Ke)",
+      "about": "Ciclo di controllo: il Legno sottomette la Terra quando è in eccesso.",
+      "source": "Nanjing, difficoltà 75; Huangdi Neijing Suwen, cap. 9",
       "when": {
         "kind": "node",
         "tags": {
@@ -1202,6 +1357,9 @@
     },
     {
       "id": "ke-heart",
+      "name": "Cuore in eccesso → Polmone (ciclo Ke)",
+      "about": "Ciclo di controllo: il Fuoco fonde il Metallo quando è in eccesso.",
+      "source": "Nanjing, difficoltà 75; Huangdi Neijing Suwen, cap. 9",
       "when": {
         "kind": "node",
         "tags": {
@@ -1222,6 +1380,9 @@
     },
     {
       "id": "ke-spleen",
+      "name": "Milza in eccesso → Rene (ciclo Ke)",
+      "about": "Ciclo di controllo: la Terra argina l'Acqua quando è in eccesso.",
+      "source": "Nanjing, difficoltà 75; Huangdi Neijing Suwen, cap. 9",
       "when": {
         "kind": "node",
         "tags": {
@@ -1242,6 +1403,9 @@
     },
     {
       "id": "ke-lung",
+      "name": "Polmone in eccesso → Fegato (ciclo Ke)",
+      "about": "Ciclo di controllo: il Metallo taglia il Legno quando è in eccesso.",
+      "source": "Nanjing, difficoltà 75; Huangdi Neijing Suwen, cap. 9",
       "when": {
         "kind": "node",
         "tags": {
@@ -1262,6 +1426,9 @@
     },
     {
       "id": "ke-kidney",
+      "name": "Rene in eccesso → Cuore (ciclo Ke)",
+      "about": "Ciclo di controllo: l'Acqua spegne il Fuoco quando è in eccesso.",
+      "source": "Nanjing, difficoltà 75; Huangdi Neijing Suwen, cap. 9",
       "when": {
         "kind": "node",
         "tags": {

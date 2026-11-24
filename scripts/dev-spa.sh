@@ -19,5 +19,7 @@ if [ ! -d node_modules ]; then
     npm ci
 fi
 
-echo "==> Starting the Angular dev server on http://localhost:4200"
-exec npx ng serve
+HOST="${DENDERA_HOST:-localhost}"
+echo "==> Starting the Angular dev server on http://$HOST:4200"
+# DENDERA_HOST=0.0.0.0 serves on every interface (other devices on the network).
+exec npx ng serve --host "$HOST"

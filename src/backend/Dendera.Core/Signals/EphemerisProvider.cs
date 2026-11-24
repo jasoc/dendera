@@ -23,6 +23,10 @@ public sealed class EphemerisProvider(IEphemeris ephemeris) : ISignalProvider
         Reliabilities.Primary,
         [
             new(SignalKinds.Placement, "Segno zodiacale in cui si trova ogni corpo celeste"),
+            new(SignalKinds.Dignity, "Dignità essenziale per segno dei sette pianeti classici: domicilio, esaltazione, esilio, caduta (punti di Lilly)"),
+            new(SignalKinds.SolarHour, "Ora solare locale e fascia di quattro ore del giorno"),
+            new(SignalKinds.Decan, "Decano (terzo di segno, 10°) di ogni corpo e il pianeta della sua faccia, in ordine caldeo"),
+            new(SignalKinds.FixedStar, "Corpo congiunto (entro 1°) a una stella regale o a una delle quindici stelle behenie di Agrippa"),
             new(SignalKinds.Retrograde, "Pianeta in moto apparente all'indietro visto dalla Terra (debilità −5 nella tavola di Lilly)"),
             new(SignalKinds.SlowMotion, "Pianeta diretto ma più lento del suo moto medio (debilità −2 nella tavola di Lilly)"),
             new(SignalKinds.Station, "Pianeta quasi fermo nel cielo, al punto di inversione del moto"),

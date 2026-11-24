@@ -1,5 +1,5 @@
 import { BodyLayer } from '../../core/models';
-import { Vec3 } from './body-shape';
+import { Vec3, pose } from './body-shape';
 
 // Where every node of the body model glows in 3D (metres, see body-shape.ts). Ids MUST match
 // Dendera.Core/Rules/BodyZones.cs. Inner layers (temperament, emotions, mind) sit in their seat organ.
@@ -11,7 +11,7 @@ const both = (x: number, y: number, z: number, r: number): Anchor3d[] => [
   { p: [-x, y, z], r },
 ];
 
-export const ANCHORS_3D: Record<string, Anchor3d[]> = {
+const REST_ANCHORS: Record<string, Anchor3d[]> = {
   // soma
   brain: [{ p: [0, 1.67, -0.005], r: 0.055 }],
   head: [{ p: [0, 1.6, 0.05], r: 0.06 }],
@@ -86,7 +86,23 @@ export const ANCHORS_3D: Record<string, Anchor3d[]> = {
   reason: [{ p: [0, 1.685, 0.0], r: 0.03 }],
   memory: [{ p: [0, 1.665, -0.045], r: 0.03 }],
   mood: [{ p: [0, 1.25, 0.03], r: 0.11 }],
+  // sephiroth: the Tree of Life on the body, facing out (Chokmah, Chesed, Netzach on the right: −x)
+  kether: [{ p: [0, 1.79, 0], r: 0.04 }],
+  chokmah: [{ p: [-0.065, 1.66, 0.02], r: 0.03 }],
+  binah: [{ p: [0.065, 1.66, 0.02], r: 0.03 }],
+  chesed: [{ p: [-0.2, 1.4, 0.02], r: 0.035 }],
+  geburah: [{ p: [0.2, 1.4, 0.02], r: 0.035 }],
+  tiphereth: [{ p: [0, 1.27, 0.06], r: 0.04 }],
+  netzach: [{ p: [-0.11, 0.92, 0.04], r: 0.035 }],
+  hod: [{ p: [0.11, 0.92, 0.04], r: 0.035 }],
+  yesod: [{ p: [0, 0.86, 0.05], r: 0.035 }],
+  malkuth: [{ p: [0, 0.04, 0.05], r: 0.04 }],
 };
+
+/** The anchors on the posed figure (contrapposto, see body-shape.ts). */
+export const ANCHORS_3D: Record<string, Anchor3d[]> = Object.fromEntries(
+  Object.entries(REST_ANCHORS).map(([id, list]) => [id, list.map((a) => ({ p: pose(a.p), r: a.r }))]),
+);
 
 /**
  * How each layer looks: brightness gain and kind index used by the shader
@@ -104,4 +120,8 @@ export const LAYER_STYLE: Record<BodyLayer, { gain: number; kind: number }> = {
   substances: { gain: 0.6, kind: 1 },
   chakras: { gain: 1.2, kind: 4 },
   nadis: { gain: 0.35, kind: 0 },
+  domains: { gain: 0, kind: 0 },
+  doshas: { gain: 0, kind: 0 },
+  sephiroth: { gain: 1.0, kind: 3 },
+  members: { gain: 0, kind: 0 },
 };

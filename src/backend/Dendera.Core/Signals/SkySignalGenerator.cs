@@ -35,6 +35,10 @@ public sealed class SkySignalGenerator(IEphemeris ephemeris)
         var signals = new List<Signal>();
 
         Placements(at, sky, ctx, signals);
+        Decans(at, sky, signals);
+        Dignities(at, sky, signals);
+        SolarHour(at, ctx, signals);
+        FixedStars(at, sky, signals);
         Retrogrades(at, sky, signals);
         SkyAspects(at, sky, ctx, signals);
         if (ctx.Natal is not null) Transits(at, sky, ctx, signals);
@@ -56,6 +60,126 @@ public sealed class SkySignalGenerator(IEphemeris ephemeris)
                 $"placement:{p.Body}", SignalKinds.Placement, Source, at, 1.0, p.Longitude, "°", tags,
                 $"{Lexicon.Name(p.Body)} in {Lexicon.Name(p.Sign)}",
                 Zodiac.Format(p.Longitude)));
+        }
+    }
+
+    /// <summary>
+    /// Decans and faces: each sign in three parts of 10°, the faces ruled in Chaldean order from Mars at 0° Aries
+    /// (the "Chaldean" faces of Ptolemy, Tetrabiblos I.24; face +1 in Lilly's table of dignities, CA p. 104).
+    /// </summary>
+    private static void Decans(DateTimeOffset at, IReadOnlyList<BodyPosition> sky, List<Signal> signals)
+    {
+        foreach (var p in sky.Where(p => p.Body != Bodies.NorthNode))
+        {
+            var index = (int)(Zodiac.Norm(p.Longitude) / 10) % 36;
+            var decan = index % 3 + 1;
+            var face = PlanetaryHours.Chaldean[(2 + index) % 7]; // Mars is third in the Chaldean order
+            signals.Add(new Signal(
+                $"decan:{p.Body}", SignalKinds.Decan, Source, at, 1.0, index + 1, "decano",
+                new Dictionary<string, string> { ["body"] = p.Body, ["sign"] = p.Sign, ["decan"] = decan.ToString(), ["face"] = face },
+                $"{Lexicon.Name(p.Body)} nel decano",
+                $"{decan}° decano di {Lexicon.Name(p.Sign)}, faccia di {Lexicon.Name(face)}"));
+        }
+    }
+
+    /// <summary>Domiciles of the seven classical planets (Ptolemy, Tetrabiblos I.17; Lilly, CA p. 104).</summary>
+    public static readonly IReadOnlyDictionary<string, string[]> Domiciles = new Dictionary<string, string[]>
+    {
+        [Bodies.Sun] = ["leo"], [Bodies.Moon] = ["cancer"], [Bodies.Mercury] = ["gemini", "virgo"],
+        [Bodies.Venus] = ["taurus", "libra"], [Bodies.Mars] = ["aries", "scorpio"],
+        [Bodies.Jupiter] = ["sagittarius", "pisces"], [Bodies.Saturn] = ["capricorn", "aquarius"],
+    };
+
+    /// <summary>Exaltations (Ptolemy, Tetrabiblos I.19; Lilly, CA p. 104).</summary>
+    public static readonly IReadOnlyDictionary<string, string> Exaltations = new Dictionary<string, string>
+    {
+        [Bodies.Sun] = "aries", [Bodies.Moon] = "taurus", [Bodies.Mercury] = "virgo", [Bodies.Venus] = "pisces",
+        [Bodies.Mars] = "capricorn", [Bodies.Jupiter] = "cancer", [Bodies.Saturn] = "libra",
+    };
+
+    private static string Opposite(string sign) => Zodiac.Signs[(Zodiac.Signs.ToList().IndexOf(sign) + 6) % 12];
+
+    /// <summary>
+    /// Essential dignity by sign of the seven classical planets, with Lilly's points (CA p. 115): domicile +5,
+    /// exaltation +4, detriment −5, fall −4; intensity = points / 5. Triplicities, terms and faces are not scored here.
+    /// </summary>
+    private static void Dignities(DateTimeOffset at, IReadOnlyList<BodyPosition> sky, List<Signal> signals)
+    {
+        foreach (var p in sky.Where(p => Domiciles.ContainsKey(p.Body)))
+        {
+            var (dignity, points) =
+                Domiciles[p.Body].Contains(p.Sign) ? ("domicile", 5)
+                : Exaltations[p.Body] == p.Sign ? ("exaltation", 4)
+                : Domiciles[p.Body].Select(Opposite).Contains(p.Sign) ? ("detriment", -5)
+                : Opposite(Exaltations[p.Body]) == p.Sign ? ("fall", -4)
+                : ("none", 0);
+            if (points == 0) continue;
+            signals.Add(new Signal(
+                $"dignity:{p.Body}", SignalKinds.Dignity, Source, at, Math.Abs(points) / 5.0, points, "punti",
+                new Dictionary<string, string>
+                {
+                    ["body"] = p.Body, ["sign"] = p.Sign, ["dignity"] = dignity,
+                    ["condition"] = points > 0 ? "dignified" : "debilitated",
+                },
+                $"{Lexicon.Name(p.Body)} {Lexicon.Name(dignity)}",
+                $"{Lexicon.Name(p.Body)} in {Lexicon.Name(p.Sign)}: {Lexicon.Name(dignity)} ({points:+0;-0} secondo Lilly)"));
+        }
+    }
+
+    /// <summary>
+    /// Local mean solar hour (UTC + longitude / 15) and its four-hour watch, counted from 02:00 (02–06, 06–10…):
+    /// a plain fact read by the schools that keep a clock of the day (Ayurveda, chronobiology).
+    /// </summary>
+    private static void SolarHour(DateTimeOffset at, SkyContext ctx, List<Signal> signals)
+    {
+        var u = at.UtcDateTime;
+        var h = ((u.Hour + u.Minute / 60.0 + ctx.Longitude / 15.0) % 24 + 24) % 24;
+        var start = (int)(((h - 2 + 24) % 24) / 4) * 4 + 2;
+        var watch = $"{start % 24:00}-{(start + 4) % 24:00}";
+        signals.Add(new Signal(
+            "solar-hour", SignalKinds.SolarHour, Source, at, 1.0, Math.Round(h, 2), "h solari",
+            new Dictionary<string, string> { ["hour"] = ((int)h).ToString(), ["watch"] = watch },
+            "Ora solare locale", $"{(int)h:00}:{(int)(h % 1 * 60):00} ora solare, fascia {watch}"));
+    }
+
+    /// <summary>
+    /// Fixed stars: the four royal stars and Agrippa's fifteen Behenian stars (De occulta philosophia II.47, "Of the
+    /// Images of the fixed Behenian Stars"; I.32 on what is under the fixed stars). Tropical longitudes at J2000 from
+    /// the standard tables, checked against 2024–2026 published positions (they differ by the expected ~0.35° of
+    /// precession), precessed at 50.29″ a year. A body within 1° (convention) is conjunct.
+    /// </summary>
+    public static readonly IReadOnlyList<(string Id, double J2000, bool Royal)> Stars =
+    [
+        ("algol", 56.17, false), ("alcyone", 60.00, false), ("aldebaran", 69.79, true), ("capella", 81.85, false),
+        ("sirius", 104.08, false), ("procyon", 115.78, false), ("regulus", 149.83, true), ("alkaid", 176.93, false),
+        ("algorab", 193.45, false), ("spica", 203.84, false), ("arcturus", 204.23, false), ("alphecca", 222.30, false),
+        ("antares", 249.77, true), ("vega", 285.32, false), ("deneb-algedi", 323.55, false), ("fomalhaut", 333.87, true),
+    ];
+
+    public const double StarOrb = 1.0;
+
+    public static double StarLongitude(double j2000, DateTimeOffset at) =>
+        Zodiac.Norm(j2000 + (at - new DateTimeOffset(2000, 1, 1, 12, 0, 0, TimeSpan.Zero)).TotalDays / 365.25 * (50.29 / 3600));
+
+    private static void FixedStars(DateTimeOffset at, IReadOnlyList<BodyPosition> sky, List<Signal> signals)
+    {
+        foreach (var (id, j2000, royal) in Stars)
+        {
+            var star = StarLongitude(j2000, at);
+            foreach (var p in sky.Where(p => p.Body != Bodies.NorthNode))
+            {
+                var dev = Zodiac.Separation(p.Longitude, star);
+                if (dev > StarOrb) continue;
+                signals.Add(new Signal(
+                    $"star:{id}:{p.Body}", SignalKinds.FixedStar, Source, at, Math.Cos(dev / StarOrb * Math.PI / 2),
+                    Math.Round(dev, 2), "° orb",
+                    new Dictionary<string, string>
+                    {
+                        ["star"] = id, ["body"] = p.Body, ["sign"] = Zodiac.SignOf(star), ["royal"] = royal ? "true" : "false",
+                    },
+                    $"{Lexicon.Name(p.Body)} congiunto a {Lexicon.Name(id)}",
+                    $"orb {dev:0.00}°, {Lexicon.Name(id)} a {Zodiac.Format(star)}"));
+            }
         }
     }
 

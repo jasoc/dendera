@@ -2,9 +2,11 @@
   // School: Melotesia. Rules are hypotheses: the journal + correlation engine tests them.
   // Zones must be ids from Dendera.Core/Rules/BodyZones.cs (validated at load).
   "id": "melothesia",
-  "version": "2.3.0",
+  "version": "2.6.0",
   "name": "Melotesia",
   "icon": "school-melothesia",
+  "lineage": "western-astrology",
+  "parents": ["galenic"],
   "tradition": "Astrologia medica tolemaica e medievale (iatromatematica)",
   "description": "Ogni segno governa una parte del corpo, dalla testa (Ariete) ai piedi (Pesci), e ogni pianeta un organo o un sistema. Transiti, retrogradazioni, stazioni, Luna ed eclissi attivano le parti corrispondenti; il tema natale dice quali sono più sensibili.",
   "references": [
@@ -13,7 +15,7 @@
     "Nicholas Culpeper, Astrological Judgement of Diseases (1655)",
     "Calendari medici medievali: la regola di non operare la parte governata dal segno lunare"
   ],
-  "requires": ["ephemeris"],
+  "requires": ["ephemeris", "planetary-hours", "life-times", "decumbiture"],
   "baseline": "melothesia",
 
   "correspondences": {
@@ -56,7 +58,69 @@
 
   "rules": [
     {
+      // Decumbiture (Culpeper, Astrological Judgement of Diseases, 1655): the Moon at square, opposition or return to
+      // its place at the onset brings a crisis, at 45°/135° an indicative day; the part of the body of the Moon's
+      // present sign bears it. Weights: convention.
+      "id": "decumbiture-crisis",
+      "name": "Luna in crisi con l'inizio del malessere → la parte del suo segno",
+      "about": "Dal momento in cui un malessere comincia, la Luna che arriva in quadratura, opposizione o di nuovo sul punto in cui era segna un giorno di crisi; la parte del corpo del segno in cui si trova la sopporta.",
+      "source": "Nicholas Culpeper, Astrological Judgement of Diseases (1655)",
+      "when": { "kind": "decumbiture-moon", "tags": { "phase": ["crisis"] } },
+      "effect": { "zonesFrom": ["sign"], "zones": ["vitality"], "weight": 0.8, "quality": "tension" },
+      "text": "Decombitura: Luna in {moonAspect} col punto d'inizio, giorno di crisi ({day}° giorno)"
+    },
+    {
+      "id": "decumbiture-judicial",
+      "name": "Luna a 45° o 135° dall'inizio → giorno indicativo",
+      "about": "Gli aspetti intermedi della Luna al suo punto d'inizio annunciano come andrà la crisi successiva: giorni da osservare, più leggeri delle crisi.",
+      "source": "Nicholas Culpeper, Astrological Judgement of Diseases (1655)",
+      "when": { "kind": "decumbiture-moon", "tags": { "phase": ["judicial"] } },
+      "effect": { "zonesFrom": ["sign"], "zones": ["vitality"], "weight": 0.4, "quality": "sensitivity" },
+      "text": "Decombitura: Luna in {moonAspect} col punto d'inizio, giorno indicativo ({day}° giorno)"
+    },
+    {
+      // Medieval medicine chose the hour of a remedy by its planet (Picatrix II; Lilly, Christian Astrology I, the
+      // planetary hours): the hour's ruler touches its organs, lightly (weight: convention).
+      "id": "planetary-hour",
+      "name": "Pianeta dell'ora → i suoi organi",
+      "about": "Ogni ora disuguale del giorno appartiene a un pianeta in ordine caldeo; la medicina medievale sceglieva l'ora del rimedio secondo il pianeta dell'organo da curare.",
+      "source": "Picatrix, libro II; William Lilly, Christian Astrology (1647), libro I, tavola delle ore planetarie",
+      "when": { "kind": "planetary-hour" },
+      "effect": { "zonesFrom": ["ruler"], "weight": 0.15, "quality": "flow" },
+      "text": "Ora di {ruler} nel giorno di {dayRuler}: il pianeta dell'ora sui suoi organi"
+    },
+    {
+      // Fixed stars intensify the body they touch (Ptolemy, Tetrabiblos I.9 on their natures; Lilly CA III on
+      // stars with the luminaries). Royal stars weigh more (convention).
+      "id": "fixed-star",
+      "name": "Pianeta su una stella fissa → il pianeta e il suo segno amplificati",
+      "about": "Una stella regale o behenia congiunta a un pianeta ne aumenta la forza, nel bene e nel male, sulle parti che quel pianeta e quel segno governano.",
+      "source": "Tolomeo, Tetrabiblos (II sec.), I.9; Agrippa, De occulta philosophia, II.47",
+      "when": { "kind": "fixed-star" },
+      "effect": {
+        "zonesFrom": ["body", "sign"],
+        "weight": 0.4,
+        "quality": "pressure",
+        "tagWeights": { "royal": { "true": 1.0, "false": 0.7 } }
+      },
+      "text": "{body} congiunto a {star} in {sign}: la stella amplifica il pianeta"
+    },
+    {
+      // Annual profection: the year's sign and its lord (Vettius Valens, Anthology IV) colour the whole year;
+      // the profected sign's body part is in the foreground (weight: convention).
+      "id": "profection",
+      "name": "Segno dell'anno di profezione → la sua parte del corpo e il suo signore",
+      "about": "Ogni anno l'Ascendente avanza di un segno: quel segno e il pianeta che lo governa colorano l'anno intero, e il corpo li sente per primi.",
+      "source": "Vettio Valente, Antologia, libro IV",
+      "when": { "kind": "profection" },
+      "effect": { "zonesFrom": ["sign", "lord"], "weight": 0.3, "quality": "sensitivity" },
+      "text": "Anno di profezione in {sign}, casa {house}: signore dell'anno {lord}"
+    },
+    {
       "id": "transit-to-natal",
+      "name": "Pianeta di oggi in aspetto con un punto natale → il pianeta, il punto e il segno del punto",
+      "about": "Un pianeta in cielo che forma un aspetto con un punto del tema di nascita risveglia gli organi di entrambi e la parte del corpo del segno natale. Pesano di più i pianeti lenti e i luoghi vitali (Sole, Luna, Ascendente, Medio Cielo).",
+      "source": "Tolomeo, Tetrabiblos (II sec.), III.10 (luoghi afetici) e III.12 (parti del corpo); al-Bīrūnī, Libro dell'istruzione, §§ 436–437 (orbi)",
       "when": { "kind": "transit-aspect" },
       "effect": {
         "zonesFrom": ["transitBody", "natalPoint", "natalSign"],
@@ -64,9 +128,15 @@
         // Weight = the planet's orb / 15 (the Sun's): al-Bīrūnī, Book of Instruction (1029, trans. Wright 1934)
         // §§ 436–437, also Lilly, Christian Astrology (1647) p. 107. Sun 15, Moon 12, Saturn and Jupiter 9,
         // Mars 8, Venus and Mercury 7, outer planets 5 (later extension). Owner's decision D.1, calibration plan.
+        // Natal targets: the aphetic (hylegical) places of Ptolemy, Tetrabiblos III.10 (Sun, Moon, Ascendant,
+        // Midheaven) weigh fully; the other classical planets 0.6 (convention); Uranus, Neptune, Pluto and the node
+        // 0.3: modern extension, unknown to Ptolemy and Lilly, and generational (shared by everyone born in the same
+        // years), so they must not dominate a personal reading (convention). Owner's decision 2026-11-21.
         "tagWeights": {
           "transitBody": { "sun": 1.0, "moon": 0.8, "saturn": 0.6, "jupiter": 0.6, "mars": 0.53,
-                           "venus": 0.47, "mercury": 0.47, "uranus": 0.33, "neptune": 0.33, "pluto": 0.33, "*": 0.33 }
+                           "venus": 0.47, "mercury": 0.47, "uranus": 0.33, "neptune": 0.33, "pluto": 0.33, "*": 0.33 },
+          "natalPoint": { "sun": 1.0, "moon": 1.0, "asc": 1.0, "mc": 1.0, "mercury": 0.6, "venus": 0.6, "mars": 0.6,
+                          "jupiter": 0.6, "saturn": 0.6, "uranus": 0.3, "neptune": 0.3, "pluto": 0.3, "*": 0.3 }
         }
       },
       "text": "{transitBody} in {aspect} con {natalPoint} natale ({natalSign})"
@@ -75,6 +145,9 @@
       // Lilly, Christian Astrology (1647) p. 115: retrograde −5, the heaviest motion debility (signal intensity 1.0).
       // The per-planet weights below are a convention of the instrument (no source gives them).
       "id": "retrograde",
+      "name": "Pianeta retrogrado → i suoi organi, verso l'interno",
+      "about": "Il moto apparente all'indietro è la debilità più forte del moto: l'azione del pianeta si ritira e si fa interna.",
+      "source": "William Lilly, Christian Astrology (1647), p. 115 (retrogrado −5)",
       "when": { "kind": "retrograde" },
       "effect": {
         "zonesFrom": ["body"],
@@ -91,6 +164,9 @@
       // Lilly, Christian Astrology (1647) p. 115: slow in motion −2 against retrograde −5. Same rule as the
       // retrograde; the signal intensity (0.4 vs 1.0) carries the ratio.
       "id": "slow-motion",
+      "name": "Pianeta più lento del suo moto medio → i suoi organi, rallentati",
+      "about": "Un pianeta diretto ma lento è debilitato, meno di un retrogrado: la sua azione rallenta.",
+      "source": "William Lilly, Christian Astrology (1647), p. 115 (lento −2)",
       "when": { "kind": "slow-motion" },
       "effect": {
         "zonesFrom": ["body"],
@@ -106,18 +182,27 @@
     {
       // Stations: not in Lilly's table; threshold and weight are a convention of the instrument.
       "id": "station",
+      "name": "Pianeta quasi fermo → i suoi organi e il suo segno, concentrati",
+      "about": "La stazione, il punto in cui il pianeta inverte il moto, concentra la sua forza sul segno in cui si ferma.",
+      "source": "Tradizione medievale delle stazioni; soglia e peso: convenzione dello strumento",
       "when": { "kind": "station", "minIntensity": 0.2 },
       "effect": { "zonesFrom": ["body", "sign"], "weight": 0.8, "quality": "pressure" },
       "text": "{body} stazionario in {sign}: il punto di svolta concentra la forza"
     },
     {
       "id": "many-retrogrades",
+      "name": "Molti pianeti retrogradi insieme → umore, nervi, vitalità",
+      "about": "Quando molti pianeti sono retrogradi nello stesso periodo, il cielo intero spinge verso l'interno.",
+      "source": "Convenzione dello strumento, dalla dottrina delle debilità di Lilly",
       "when": { "kind": "retrograde-count", "minIntensity": 0.3 },
       "effect": { "zones": ["mood", "nervous-system", "vitality"], "weight": 0.6, "quality": "inward" },
       "text": "{count} pianeti retrogradi insieme: il cielo spinge verso l'interno"
     },
     {
       "id": "sky-aspect",
+      "name": "Aspetto tra due pianeti in cielo → gli organi di entrambi",
+      "about": "Un angolo significativo tra due pianeti mette in relazione i loro organi, con la qualità dell'aspetto.",
+      "source": "Tolomeo, Tetrabiblos (II sec.), I.13 (i cinque aspetti)",
       "when": { "kind": "sky-aspect" },
       "effect": {
         "zonesFrom": ["bodyA", "bodyB"],
@@ -128,60 +213,90 @@
     },
     {
       "id": "moon-sign",
+      "name": "Luna in un segno → la parte del corpo del segno",
+      "about": "Regola dei calendari medici: non operare né salassare la parte governata dal segno in cui transita la Luna, perché in quei giorni è più ricettiva.",
+      "source": "Calendari medici medievali; Manilio, Astronomica, II (l'uomo zodiacale)",
       "when": { "kind": "placement", "tags": { "body": ["moon"] } },
       "effect": { "zonesFrom": ["sign"], "weight": 0.35, "quality": "sensitivity" },
       "text": "Luna in {sign}: zona sensibile (regola medievale: non operare la parte governata dal segno lunare)"
     },
     {
       "id": "sun-sign",
+      "name": "Sole in un segno → la parte del corpo del segno",
+      "about": "Il segno del Sole è la stagione dell'anno: la parte del corpo che governa è in primo piano.",
+      "source": "Tolomeo, Tetrabiblos (II sec.), III.12; Manilio, Astronomica, II",
       "when": { "kind": "placement", "tags": { "body": ["sun"] } },
       "effect": { "zonesFrom": ["sign"], "weight": 0.25, "quality": "fusion" },
       "text": "Sole in {sign}: la stagione illumina questa zona"
     },
     {
       "id": "full-moon",
+      "name": "Luna piena → sonno, umore, linfa",
+      "about": "Nella medicina antica la Luna governa gli umidi del corpo: a Luna piena le maree interne sono alte.",
+      "source": "Tolomeo, Tetrabiblos (II sec.), I.4 (la Luna umida); Culpeper",
       "when": { "kind": "lunar-phase", "tags": { "phase": ["full"] } },
       "effect": { "zones": ["sleep", "mood", "lymph"], "weight": 0.7, "quality": "agitation" },
       "text": "Luna piena: maree alte nei fluidi e nel sonno"
     },
     {
       "id": "new-moon",
+      "name": "Luna nuova → vitalità e umore bassi",
+      "about": "A Luna nuova la luce lunare manca e le riserve del corpo sono basse: tempo di semina, non di raccolto.",
+      "source": "Calendari medici e agrari medievali",
       "when": { "kind": "lunar-phase", "tags": { "phase": ["new"] } },
       "effect": { "zones": ["vitality", "mood"], "weight": 0.5, "quality": "depletion" },
       "text": "Luna nuova: riserve basse, fase di semina"
     },
     {
       "id": "perigee",
+      "name": "Luna vicina alla Terra → linfa e sonno",
+      "about": "Più la Luna è vicina, più forte è la sua marea sugli umidi del corpo.",
+      "source": "Convenzione dello strumento, dalla Luna umida di Tolomeo",
       "when": { "kind": "lunar-distance", "minIntensity": 0.7 },
       "effect": { "zones": ["lymph", "sleep"], "weight": 0.3, "quality": "agitation" },
       "text": "Luna vicina alla Terra: marea più forte"
     },
     {
       "id": "eclipse-season",
+      "name": "Eclissi vicina → vitalità, umore, nervi",
+      "about": "Nella tradizione un'eclissi oscura i luminari, i datori di vita: nelle settimane intorno la vitalità vacilla.",
+      "source": "Tolomeo, Tetrabiblos (II sec.), II.4–8 (eclissi)",
       "when": { "kind": "eclipse" },
       "effect": { "zones": ["vitality", "mood", "nervous-system"], "weight": 0.8, "quality": "tension" },
       "text": "Stagione di eclissi ({label}): i luminari si oscurano"
     },
     {
       "id": "moon-element-fire",
+      "name": "Luna in segno di Fuoco → temperamento collerico",
+      "about": "L'elemento del segno lunare colora il temperamento del giorno: il Fuoco, caldo e secco, la bile gialla.",
+      "source": "Galeno e la medicina astrologica medievale; Tolomeo, Tetrabiblos (II sec.), I.11–12",
       "when": { "kind": "placement", "tags": { "body": ["moon"], "sign": ["aries", "leo", "sagittarius"] } },
       "effect": { "zones": ["choleric"], "weight": 0.3, "quality": "sensitivity" },
       "text": "Luna in {sign}, segno di Fuoco: il temperamento del giorno si fa collerico"
     },
     {
       "id": "moon-element-earth",
+      "name": "Luna in segno di Terra → temperamento melanconico",
+      "about": "La Terra, fredda e secca, è la bile nera.",
+      "source": "Galeno e la medicina astrologica medievale",
       "when": { "kind": "placement", "tags": { "body": ["moon"], "sign": ["taurus", "virgo", "capricorn"] } },
       "effect": { "zones": ["melancholic"], "weight": 0.3, "quality": "sensitivity" },
       "text": "Luna in {sign}, segno di Terra: il temperamento del giorno si fa melanconico"
     },
     {
       "id": "moon-element-air",
+      "name": "Luna in segno d'Aria → temperamento sanguigno",
+      "about": "L'Aria, calda e umida, è il sangue.",
+      "source": "Galeno e la medicina astrologica medievale",
       "when": { "kind": "placement", "tags": { "body": ["moon"], "sign": ["gemini", "libra", "aquarius"] } },
       "effect": { "zones": ["sanguine"], "weight": 0.3, "quality": "sensitivity" },
       "text": "Luna in {sign}, segno di Aria: il temperamento del giorno si fa sanguigno"
     },
     {
       "id": "moon-element-water",
+      "name": "Luna in segno d'Acqua → temperamento flemmatico",
+      "about": "L'Acqua, fredda e umida, è il flegma.",
+      "source": "Galeno e la medicina astrologica medievale",
       "when": { "kind": "placement", "tags": { "body": ["moon"], "sign": ["cancer", "scorpio", "pisces"] } },
       "effect": { "zones": ["phlegmatic"], "weight": 0.3, "quality": "sensitivity" },
       "text": "Luna in {sign}, segno di Acqua: il temperamento del giorno si fa flemmatico"

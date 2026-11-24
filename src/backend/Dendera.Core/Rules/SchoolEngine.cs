@@ -30,6 +30,18 @@ public sealed class NatalBaselines : Dictionary<string, IReadOnlyDictionary<stri
         symbols.SelectMany(school.ZonesOf).Distinct().ToDictionary(z => z, _ => 1.0);
 }
 
+/// <summary>How schools are averaged on a node.</summary>
+public enum ConsensusMode
+{
+    /// <summary>Mean of the schools that cover the node: one vote per school.</summary>
+    Plain,
+    /// <summary>
+    /// One vote per family of traditions (<see cref="SchoolEngine.Families"/>): schools of the same lineage, or borrowing
+    /// directly from an active school's lineage, are averaged together first, then the families are averaged.
+    /// </summary>
+    Lineage,
+}
+
 /// <summary>
 /// Pure: runs several schools on the same signals and combines them per node by <b>consensus</b>: the combined score is
 /// the mean of the scores of the schools that can speak about that node (<see cref="RuleSet.Covers"/>), zeros included.
@@ -41,8 +53,9 @@ public static class SchoolEngine
     public static IReadOnlyList<ZoneActivation> Evaluate(
         IReadOnlyList<RuleSet> schools,
         IReadOnlyList<Signal> signals,
-        IReadOnlyDictionary<string, IReadOnlyDictionary<string, double>>? natalBaselines = null) =>
-        Combine(schools, EvaluateEach(schools, signals, natalBaselines));
+        IReadOnlyDictionary<string, IReadOnlyDictionary<string, double>>? natalBaselines = null,
+        ConsensusMode mode = ConsensusMode.Plain) =>
+        Combine(schools, EvaluateEach(schools, signals, natalBaselines), mode);
 
     public static IReadOnlyList<IReadOnlyList<ZoneActivation>> EvaluateEach(
         IReadOnlyList<RuleSet> schools,
@@ -52,8 +65,10 @@ public static class SchoolEngine
 
     /// <summary>Combines per-school activations (each list in <see cref="BodyZones"/> order, aligned with <paramref name="schools"/>).</summary>
     public static IReadOnlyList<ZoneActivation> Combine(
-        IReadOnlyList<RuleSet> schools, IReadOnlyList<IReadOnlyList<ZoneActivation>> perSchool)
+        IReadOnlyList<RuleSet> schools, IReadOnlyList<IReadOnlyList<ZoneActivation>> perSchool,
+        ConsensusMode mode = ConsensusMode.Plain)
     {
+        var families = mode == ConsensusMode.Lineage ? Families(schools) : null;
         if (perSchool.Count == 1) return perSchool[0];
         if (perSchool.Count == 0)
         {
@@ -67,13 +82,17 @@ public static class SchoolEngine
         {
             var first = perSchool[0][i];
             // The schools that can speak about this node; if none can, it stays at zero.
-            var parts = perSchool.Select((list, s) => (school: schools[s], z: list[i]))
-                .Where(p => p.school.Covers.Contains(first.Zone))
-                .Select(p => p.z)
+            var covering = perSchool.Select((list, s) => (index: s, z: list[i]))
+                .Where(p => schools[p.index].Covers.Contains(first.Zone))
                 .ToList();
+            var parts = covering.Select(p => p.z).ToList();
             if (parts.Count == 0) parts = [first with { Score = 0, Raw = 0, BySchool = new Dictionary<string, double>() }];
 
-            double Mean(Func<ZoneActivation, double> f) => parts.Average(f);
+            // Plain: one vote per school. Lineage: the mean of each family's mean.
+            double Mean(Func<ZoneActivation, double> f) =>
+                families is null || covering.Count == 0
+                    ? parts.Average(f)
+                    : covering.GroupBy(p => families[p.index]).Average(g => g.Average(p => f(p.z)));
             var byQuality = parts.SelectMany(p => p.ByQuality)
                 .GroupBy(kv => kv.Key)
                 .ToDictionary(g => g.Key, g => g.Sum(kv => kv.Value));
@@ -92,5 +111,16 @@ public static class SchoolEngine
                 parts.SelectMany(p => p.Contributions).OrderByDescending(c => c.Amount).ToList(),
                 parts.SelectMany(p => p.BySchool).ToDictionary(kv => kv.Key, kv => kv.Value));
         }).ToList();
+    }
+
+    /// <summary>
+    /// Family (a lineage id) each school votes with: its own lineage, or the first of its parents that another active
+    /// school belongs to (one step only: no chains, or a school borrowing from many — Human Design — would merge
+    /// every tradition into one).
+    /// </summary>
+    public static string[] Families(IReadOnlyList<RuleSet> schools)
+    {
+        var present = schools.Select(s => s.Lineage).ToHashSet();
+        return schools.Select(s => s.Parents.FirstOrDefault(present.Contains) ?? s.Lineage).ToArray();
     }
 }

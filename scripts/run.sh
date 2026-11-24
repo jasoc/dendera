@@ -12,7 +12,9 @@
 # process-compose, the .NET SDK pinned in global.json and the Node pinned in
 # src/frontend/.node-version are available, and stops with a pointer to the README's Prerequisites if one isn't.
 #
-# Usage: ./scripts/run.sh [--stop]
+# Usage: ./scripts/run.sh [--stop | --background]
+#   --background  start detached without the TUI (for scripts and remote sessions)
+#   DENDERA_HOST=0.0.0.0 (environment or .env) serves on every interface instead of localhost.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -61,12 +63,15 @@ dendera_ensure_node "$ROOT/src/frontend"
 cat <<EOF2
 
 ==> Starting the dev stack (the API migrates its SQLite database on first boot):
-      API     http://localhost:5180
-      UI dev  http://localhost:4200  (fast rebuild loop, proxies /api to :5180)
+      API     http://${DENDERA_HOST:-localhost}:5180
+      UI dev  http://${DENDERA_HOST:-localhost}:4200  (fast rebuild loop, proxies /api to :5180)
     Quitting the TUI leaves the stack running; re-run this script to reattach,
     ./scripts/run.sh --stop to stop everything.
 
 EOF2
 
 cd "$ROOT"
+if [ "${1:-}" = "--background" ]; then
+    exec process-compose up -f process-compose.yaml -U -u "$SOCKET" --detached
+fi
 exec process-compose up -f process-compose.yaml -U -u "$SOCKET" --detached-with-tui

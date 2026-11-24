@@ -1,0 +1,122 @@
+{
+  // School: Ayurveda. The three doshas moved by the hour, the season (ritu), age and the qualities of the weather.
+  // Independent medical tradition, to set against TCM and Galenic medicine. Zones: Dendera.Core/Rules/BodyZones.cs.
+  "id": "ayurveda",
+  "version": "1.0.0",
+  "name": "Ayurveda",
+  "icon": "school-ayurveda",
+  "lineage": "vedic",
+  "parents": [],
+  "tradition": "Medicina ayurvedica: i tre dosha, le stagioni, l'orologio del giorno",
+  "description": "Tre forze governano il corpo: Vata (aria ed etere, il movimento), Pitta (fuoco, la trasformazione), Kapha (acqua e terra, la struttura). Ogni dosha cresce in certe ore del giorno, si accumula e si aggrava in certe stagioni, prevale in un'età della vita, ed è nutrito dalle qualità del clima: il freddo secco e il vento muovono Vata, il caldo Pitta, il freddo umido Kapha. Un dosha alto pesa sulle sue sedi.",
+  "references": [
+    "Vagbhata, Ashtanga Hridaya, Sutrasthana 1 (i dosha, le loro qualità, ore ed età), 3 (le sei stagioni, ritucharya), 12 (sedi dei dosha)",
+    "Charaka Samhita, Sutrasthana 6 (le stagioni) e 12 (Vata)",
+    "Le sei ritu sul Sole siderale: due segni ciascuna, da Shishira (Capricorno–Acquario)"
+  ],
+  "requires": ["ephemeris", "lunar-stations", "life-times", "open-meteo"],
+  "baseline": "none",
+  "natalAmplification": 0,
+  "saturation": 2.5,
+
+  "rules": [
+    // The clock of the day (AH Su 1.8: kapha at the beginning, pitta in the middle, vata at the end of day and of
+    // night), in the usual four-hour watches. Weights: convention.
+    { "id": "clock-kapha", "name": "Mattino e sera (6–10, 18–22) → Kapha",
+      "about": "All'inizio del giorno e della notte prevale Kapha.",
+      "source": "Vagbhata, Ashtanga Hridaya, Sutrasthana 1.8", "when": { "kind": "solar-hour", "tags": { "watch": ["06-10", "18-22"] } },
+      "effect": { "zones": ["kapha"], "weight": 0.3, "quality": "flow" }, "text": "Ore di Kapha ({detail})" },
+    { "id": "clock-pitta", "name": "Mezzogiorno e mezzanotte (10–14, 22–2) → Pitta",
+      "about": "A metà del giorno e della notte prevale Pitta.",
+      "source": "Vagbhata, Ashtanga Hridaya, Sutrasthana 1.8", "when": { "kind": "solar-hour", "tags": { "watch": ["10-14", "22-02"] } },
+      "effect": { "zones": ["pitta"], "weight": 0.3, "quality": "flow" }, "text": "Ore di Pitta ({detail})" },
+    { "id": "clock-vata", "name": "Pomeriggio e alba (14–18, 2–6) → Vata",
+      "about": "Alla fine del giorno e della notte prevale Vata.",
+      "source": "Vagbhata, Ashtanga Hridaya, Sutrasthana 1.8", "when": { "kind": "solar-hour", "tags": { "watch": ["14-18", "02-06"] } },
+      "effect": { "zones": ["vata"], "weight": 0.3, "quality": "flow" }, "text": "Ore di Vata ({detail})" },
+
+    // Seasons on the sidereal Sun (AH Su 3; Charaka Su 6): each dosha accumulates (chaya) in one season and is
+    // aggravated (prakopa) in the next. Vata: Grishma → Varsha; Pitta: Varsha → Sharad; Kapha: Shishira → Vasanta.
+    { "id": "vata-accumulates", "name": "Grishma (estate secca) → Vata si accumula",
+      "about": "Il secco dell'estate accumula Vata.",
+      "source": "Vagbhata, Ashtanga Hridaya, Sutrasthana 3; Charaka Samhita, Sutrasthana 6", "when": { "kind": "sidereal-placement", "tags": { "body": ["sun"], "sign": ["taurus", "gemini"] } },
+      "effect": { "zones": ["vata"], "weight": 0.3, "quality": "pressure" }, "text": "Grishma (estate secca): Vata si accumula" },
+    { "id": "vata-aggravated", "name": "Varsha (piogge) → Vata si aggrava",
+      "about": "Con le piogge Vata accumulato si aggrava.",
+      "source": "Vagbhata, Ashtanga Hridaya, Sutrasthana 3; Charaka, Sutrasthana 6", "when": { "kind": "sidereal-placement", "tags": { "body": ["sun"], "sign": ["cancer", "leo"] } },
+      "effect": { "zones": ["vata"], "weight": 0.7, "quality": "agitation" }, "text": "Varsha (piogge): Vata si aggrava" },
+    { "id": "pitta-accumulates", "name": "Varsha (piogge) → Pitta si accumula",
+      "about": "Le piogge acide accumulano Pitta.",
+      "source": "Vagbhata, Ashtanga Hridaya, Sutrasthana 3", "when": { "kind": "sidereal-placement", "tags": { "body": ["sun"], "sign": ["cancer", "leo"] } },
+      "effect": { "zones": ["pitta"], "weight": 0.3, "quality": "pressure" }, "text": "Varsha (piogge): Pitta si accumula" },
+    { "id": "pitta-aggravated", "name": "Sharad (autunno) → Pitta si aggrava",
+      "about": "Il sole d'autunno aggrava Pitta accumulato.",
+      "source": "Vagbhata, Ashtanga Hridaya, Sutrasthana 3", "when": { "kind": "sidereal-placement", "tags": { "body": ["sun"], "sign": ["virgo", "libra"] } },
+      "effect": { "zones": ["pitta"], "weight": 0.7, "quality": "agitation" }, "text": "Sharad (autunno): Pitta si aggrava" },
+    { "id": "kapha-accumulates", "name": "Shishira (fine inverno) → Kapha si accumula",
+      "about": "Il freddo umido accumula Kapha.",
+      "source": "Vagbhata, Ashtanga Hridaya, Sutrasthana 3", "when": { "kind": "sidereal-placement", "tags": { "body": ["sun"], "sign": ["capricorn", "aquarius"] } },
+      "effect": { "zones": ["kapha"], "weight": 0.3, "quality": "pressure" }, "text": "Shishira (fine inverno): Kapha si accumula" },
+    { "id": "kapha-aggravated", "name": "Vasanta (primavera) → Kapha si aggrava",
+      "about": "Il calore di primavera scioglie e aggrava Kapha.",
+      "source": "Vagbhata, Ashtanga Hridaya, Sutrasthana 3", "when": { "kind": "sidereal-placement", "tags": { "body": ["sun"], "sign": ["pisces", "aries"] } },
+      "effect": { "zones": ["kapha"], "weight": 0.7, "quality": "agitation" }, "text": "Vasanta (primavera): Kapha si aggrava" },
+
+    // Age (AH Su 1.8): kapha in childhood, pitta in the middle of life, vata in old age; on septennials:
+    // 0–14 kapha, 14–70 pitta, from 70 vata. Weight: convention.
+    { "id": "age-kapha", "name": "Infanzia → Kapha",
+      "about": "Nell'infanzia prevale Kapha, che costruisce il corpo.",
+      "source": "Vagbhata, Ashtanga Hridaya, Sutrasthana 1.8", "when": { "kind": "septennial", "tags": { "septennial": ["1", "2"] } },
+      "effect": { "zones": ["kapha"], "weight": 0.2, "quality": "flow" }, "text": "Età di Kapha (infanzia)" },
+    { "id": "age-pitta", "name": "Età adulta → Pitta",
+      "about": "Nell'età di mezzo prevale Pitta.",
+      "source": "Vagbhata, Ashtanga Hridaya, Sutrasthana 1.8", "when": { "kind": "septennial", "tags": { "septennial": ["3", "4", "5", "6", "7", "8", "9", "10"] } },
+      "effect": { "zones": ["pitta"], "weight": 0.2, "quality": "flow" }, "text": "Età di Pitta (età adulta)" },
+    { "id": "age-vata", "name": "Vecchiaia → Vata",
+      "about": "Nella vecchiaia prevale Vata, che asciuga.",
+      "source": "Vagbhata, Ashtanga Hridaya, Sutrasthana 1.8", "when": { "kind": "septennial", "tags": { "septennial": ["11", "12", "13", "14", "15", "16"] } },
+      "effect": { "zones": ["vata"], "weight": 0.2, "quality": "flow" }, "text": "Età di Vata (vecchiaia)" },
+
+    // Qualities of the weather (AH Su 1.11–12): vata dry, light, cold, rough, mobile; pitta hot, sharp;
+    // kapha heavy, cold, moist. Weights: convention.
+    { "id": "cold-vata-kapha", "name": "Freddo → Vata e Kapha",
+      "about": "Il freddo nutre i due dosha freddi.",
+      "source": "Vagbhata, Ashtanga Hridaya, Sutrasthana 1.11–12 (le qualità dei dosha)", "when": { "kind": "temperature", "tags": { "level": ["cold"] }, "minIntensity": 0.1 },
+      "effect": { "zones": ["vata", "kapha"], "weight": 0.3, "quality": "pressure" }, "text": "Freddo ({detail}): cresce ciò che è freddo, Vata e Kapha" },
+    { "id": "heat-pitta", "name": "Caldo → Pitta",
+      "about": "Il caldo nutre Pitta, il fuoco.",
+      "source": "Vagbhata, Ashtanga Hridaya, Sutrasthana 1.11–12", "when": { "kind": "temperature", "tags": { "level": ["heat"] }, "minIntensity": 0.1 },
+      "effect": { "zones": ["pitta"], "weight": 0.5, "quality": "agitation" }, "text": "Caldo ({detail}): cresce Pitta" },
+    { "id": "muggy-pitta-kapha", "name": "Afa → Pitta e Kapha",
+      "about": "Caldo e umido insieme nutrono Pitta e Kapha.",
+      "source": "Vagbhata, Ashtanga Hridaya, Sutrasthana 1.11–12", "when": { "kind": "muggy" },
+      "effect": { "zones": ["pitta", "kapha"], "weight": 0.3, "quality": "pressure" }, "text": "Afa ({detail}): caldo e umido" },
+    { "id": "dry-vata", "name": "Aria secca → Vata",
+      "about": "Il secco è la qualità prima di Vata.",
+      "source": "Vagbhata, Ashtanga Hridaya, Sutrasthana 1.11–12", "when": { "kind": "dryness", "minIntensity": 0.2 },
+      "effect": { "zones": ["vata"], "weight": 0.4, "quality": "agitation" }, "text": "Aria secca ({detail}): cresce Vata" },
+    { "id": "wind-vata", "name": "Vento → Vata",
+      "about": "Il vento è mobile come Vata.",
+      "source": "Vagbhata, Ashtanga Hridaya, Sutrasthana 1.11–12", "when": { "kind": "wind", "minIntensity": 0.2 },
+      "effect": { "zones": ["vata"], "weight": 0.4, "quality": "agitation" }, "text": "Vento ({detail}): cresce Vata, il mobile" },
+    { "id": "humid-kapha", "name": "Umidità → Kapha",
+      "about": "L'umido e il pesante nutrono Kapha.",
+      "source": "Vagbhata, Ashtanga Hridaya, Sutrasthana 1.11–12", "when": { "kind": "humidity", "minIntensity": 0.3 },
+      "effect": { "zones": ["kapha"], "weight": 0.4, "quality": "pressure" }, "text": "Umidità alta ({detail}): cresce Kapha" },
+
+    // Seats of the doshas (AH Su 12): vata colon, bones, ears, nerves; pitta stomach and small intestine, blood,
+    // eyes, skin; kapha chest, head, throat. Second pass on the doshas this school raised.
+    { "id": "vata-seats", "name": "Vata alto → colon, ossa, orecchie, nervi",
+      "about": "Un dosha in eccesso pesa sulle sue sedi.",
+      "source": "Vagbhata, Ashtanga Hridaya, Sutrasthana 12", "when": { "kind": "node", "tags": { "node": ["vata"] }, "minIntensity": 0.2 },
+      "effect": { "zones": ["gut", "skeleton", "ears", "nervous-system"], "weight": 0.4 }, "text": "Vata alto ({detail}) pesa sulle sue sedi" },
+    { "id": "pitta-seats", "name": "Pitta alto → stomaco, sangue, occhi, pelle",
+      "about": "Un dosha in eccesso pesa sulle sue sedi.",
+      "source": "Vagbhata, Ashtanga Hridaya, Sutrasthana 12", "when": { "kind": "node", "tags": { "node": ["pitta"] }, "minIntensity": 0.2 },
+      "effect": { "zones": ["stomach", "circulation", "eyes", "skin"], "weight": 0.4 }, "text": "Pitta alto ({detail}) pesa sulle sue sedi" },
+    { "id": "kapha-seats", "name": "Kapha alto → petto, testa, gola",
+      "about": "Un dosha in eccesso pesa sulle sue sedi.",
+      "source": "Vagbhata, Ashtanga Hridaya, Sutrasthana 12", "when": { "kind": "node", "tags": { "node": ["kapha"] }, "minIntensity": 0.2 },
+      "effect": { "zones": ["lungs", "head", "throat"], "weight": 0.4 }, "text": "Kapha alto ({detail}) pesa sulle sue sedi" }
+  ]
+}
